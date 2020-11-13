@@ -7,58 +7,88 @@
 % ###########
 % ### MAIN ###
 % ###########
-function choices = Main()
+function ballotTable = Main()
     % - Read in a ballot template image and possible template choices
     [template, templateChoices] = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
-    ballotFilenames = BallotFilenames();
+    ballotFilenames = BallotFilenames()';
 
+    % - Preallocate validity array
+    % - Each entry can have take one of the three values:
+    % - valid
+    % - invalid
+    % - unidentified
+    validity = strings(size(ballotFilenames));
     % - Preallocate choices array
-    choices = strings(length(ballotFilenames));
+    % - Each entry contains the marked choices in a ballot (if any)
+    choices = strings(size(ballotFilenames));
+    
     % - Do something for every ballot image
-    i = 1;
-    for ballotFilename = ballotFilenames
-        % Figure out the marked choice for a ballot image
-        choice = Pipeline(template, templateChoices, ballotFilename);
-        choices(i) = choice;
+    for i = 1:length(ballotFilenames)
+        % Figure out the marked choice for a ballot image (if it is valid)
+        [validity(i), choices(i)] = Pipeline(template, templateChoices, ballotFilenames(i));
     end
+    
+    index = (1:length(validity))';
+    ballotTable = table(index, ballotFilenames, validity, choices);
+    writetable(ballotTable, "result.csv")
 end
 
 % ###############
 % ### PIPELINE ###
 % ###############
-function choice = Pipeline(template, templateChoices, ballotFilename)
+function [validity, choice] = Pipeline(template, templateChoices, ballotFilename)
+        % - Implemented as suggested in the file
+        % "Konzept_Wahlzettel_Erkennung.pdf" -> Point 5: Methodik
         % - For each Ballot, go through the following steps:
         
         % - STEP 1
         % - Read in ballot image
-        % - Prepare the image for the template matching
         ballotImg = Read(ballotFilename);
-        imshow(ballotImg);
+        % - Prepare the image for circle matching
+        preparedBallot = Prepare(ballotImg);
         
         % - STEP 2
-        % - Match template to ballot
-        % - Includes any necessary gemeotric tansformations
-        % - If a match cannot be made, declare the ballot invalid -> cancel the
-        % pipeline and return
-        % - this step can maybe be split into two functions instead of just one?
-        transformedBallot = Transform(ballotImg, template);
-
-        % - STEP 3
         % - Match circles in ballot
-        % - Associate each circle with its appropriate choice by
-        % outputting circles in correct order
-        % - If the right amount of circles cannot be found, declare the ballot's
+        % - output all circles in correct order
+        ballotCircles = Circles(preparedBallot);
+        
+        % - STEP 3
+        % - If the right amount of circles cannot be found, perform
+        % some transformation and try to match the circles again.
+        if length(ballotCircles) ~= length(templateChoices)
+            transformedBallot = Transform(preparedBallot, template);
+            ballotCircles = Circles(transformedBallot);
+        end
+        % - If the right amount of circles still cannot be found, declare the ballot's
         % validity as unidentifiable -> cancel the pipeline and return
-        ballotCircles = Circles(transformedBallot);
+        if length(ballotCircles) ~= length(templateChoices)
+            validity = "unidentified";
+            choice = "";
+            return
+        end
         
         % - STEP 4
+        % - Figure out which circle(s) are marked
+        markedCircleIndices = CheckMark(ballotCircles);
+        
+        % - STEP 5
         % - Figure out which circle is marked
-        % - If a marked circle is found, declare the ballot valid and return 
-        % - If no circle is marked, declare the ballot inaproppriately marked ->
-        % cancel the pipeline and return
-        markedCircleIndex = CheckMark(ballotCircles);
-        choice = templateChoices(markedCircleIndex);
+        % - If exactly one marked circle is found, declare the ballot valid and return 
+        % - otherwise, declare the ballot invalid and return
+        if length(markedCircleIndices) == 1
+            validity = "valid";
+            choice = templateChoices(markedCircleIndices(1));
+            return
+        else
+            validity = "invalid";
+            choice = "";
+            % return all marked choices (if there is more than one)
+            for i = markedCircleIndices
+                choice = strcat(choice, templateChoices(i), " ");
+            end
+            return
+        end
 end
 
