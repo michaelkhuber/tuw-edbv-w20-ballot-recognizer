@@ -4,9 +4,9 @@
 % - ballot is inaproppriately marked
 % - ballot is valid and apropproiately marked -> return marked choice
 
-% ###########
+% ############
 % ### MAIN ###
-% ###########
+% ############
 function ballotTable = Main()
     % - Read in a ballot template image and possible template choices
     [template, templateChoices] = Templ();
