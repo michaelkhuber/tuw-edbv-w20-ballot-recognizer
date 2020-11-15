@@ -59,7 +59,7 @@ function [validity, choice] = Pipeline(templateChoices, ballotFilename)
         %  - If the right amount of circles cannot be found, perform
         %  some transformation and try to match the circles again.
         if length(ballotCircles) ~= length(templateChoices)
-            transformedBallot = Transform(preparedBallot, template);
+            transformedBallot = Transform(preparedBallot);
             ballotCircles = Circles(transformedBallot);
         end
         %  - If the right amount of circles still cannot be found, declare the ballot's
