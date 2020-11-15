@@ -1,0 +1,17 @@
+filename;validity;choices
+1A.jpg;valid;SPOE
+1B.jpg;valid;SPOE
+1C.jpg;valid;SPOE
+1D.jpg;valid;SPOE
+2A.jpg;invalid;GRUENE BIER
+2B.jpg;invalid;GRUENE BIER
+2C.jpg;invalid;GRUENE BIER
+3A.jpg;valid;BIER
+3B.jpg;valid;BIER
+3C.jpg;valid;BIER
+4A.jpg;invalid;SPOE GRUENE
+4B.jpg;invalid;SPOE GRUENE
+4C.jpg;invalid;SPOE GRUENE
+5A.jpg;valid;OEVP
+5B.jpg;valid;OEVP
+5C.jpg;valid;OEVP

@@ -4,12 +4,13 @@
 % - ballot is inaproppriately marked
 % - ballot is valid and apropproiately marked -> return marked choice
 
-% ############
-% ### MAIN ###
-% ############
+
+%% ##########
+%  ## MAIN ##
+%  ##########
 function ballotTable = Main()
-    % - Read in a ballot template image and possible template choices
-    [template, templateChoices] = Templ();
+    % - Read in ordered ballot template choices
+    templateChoices = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames()';
@@ -27,7 +28,7 @@ function ballotTable = Main()
     % - Do something for every ballot image
     for i = 1:length(ballotFilenames)
         % Figure out the marked choice for a ballot image (if it is valid)
-        [validity(i), choices(i)] = Pipeline(template, templateChoices, ballotFilenames(i));
+        [validity(i), choices(i)] = Pipeline(templateChoices, ballotFilenames(i));
     end
     
     index = (1:length(validity))';
@@ -35,48 +36,48 @@ function ballotTable = Main()
     writetable(ballotTable, "result.csv")
 end
 
-% ###############
-% ### PIPELINE ###
-% ###############
-function [validity, choice] = Pipeline(template, templateChoices, ballotFilename)
+%% ##############
+%  ## PIPELINE ##
+%  ##############
+function [validity, choice] = Pipeline(templateChoices, ballotFilename)
         % - Implemented as suggested in the file
         % "Konzept_Wahlzettel_Erkennung.pdf" -> Point 5: Methodik
         % - For each Ballot, go through the following steps:
         
-        % - STEP 1
-        % - Read in ballot image
+        %% - STEP 1
+        %  - Read in ballot image
         ballotImg = Read(ballotFilename);
-        % - Prepare the image for circle matching
+        %  - Prepare the image for circle matching
         preparedBallot = Prepare(ballotImg);
         
-        % - STEP 2
-        % - Match circles in ballot
-        % - output all circles in correct order
+        %% - STEP 2
+        %  - Match circles in ballot
+        %  - output all circles in correct order
         ballotCircles = Circles(preparedBallot);
         
-        % - STEP 3
-        % - If the right amount of circles cannot be found, perform
-        % some transformation and try to match the circles again.
+        %% - STEP 3
+        %  - If the right amount of circles cannot be found, perform
+        %  some transformation and try to match the circles again.
         if length(ballotCircles) ~= length(templateChoices)
             transformedBallot = Transform(preparedBallot, template);
             ballotCircles = Circles(transformedBallot);
         end
-        % - If the right amount of circles still cannot be found, declare the ballot's
-        % validity as unidentifiable -> cancel the pipeline and return
+        %  - If the right amount of circles still cannot be found, declare the ballot's
+        %  validity as unidentifiable -> cancel the pipeline and return
         if length(ballotCircles) ~= length(templateChoices)
             validity = "unidentified";
             choice = "";
             return
         end
         
-        % - STEP 4
-        % - Figure out which circle(s) are marked
+        %% - STEP 4
+        %  - Figure out which circle(s) are marked
         markedCircleIndices = CheckMark(ballotCircles);
         
-        % - STEP 5
-        % - Figure out which circle is marked
-        % - If exactly one marked circle is found, declare the ballot valid and return 
-        % - otherwise, declare the ballot invalid and return
+        %% - STEP 5
+        %  - Figure out which circle is marked
+        %  - If exactly one marked circle is found, declare the ballot valid and return 
+        %  - otherwise, declare the ballot invalid and return
         if length(markedCircleIndices) == 1
             validity = "valid";
             choice = templateChoices(markedCircleIndices(1));
