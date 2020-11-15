@@ -1,4 +1,4 @@
 index,ballotFilenames,validity,choices
-1,resources\ballots\ballot0.png,invalid,SPOE FPOE OEVP 
-2,resources\ballots\ballot1.png,invalid,SPOE FPOE OEVP 
-3,resources\ballots\ballot2.png,invalid,SPOE FPOE OEVP 
+1,resources/ballots/ballot0.png,invalid,SPOE FPOE OEVP 
+2,resources/ballots/ballot1.png,invalid,SPOE FPOE OEVP 
+3,resources/ballots/ballot2.png,invalid,SPOE FPOE OEVP 
