@@ -76,8 +76,6 @@ function transformed = Transform(im)
 		imNewHeight = max([heightL, heightR]);
 		imNewWidth  = max([widthT, widthB]);
         
-        %imNewHeight = 210;
-        %imNewWidth = 280;
         
 		cornersNew = [         1,           1; 
 					  imNewWidth,           1;
@@ -92,56 +90,23 @@ function transformed = Transform(im)
         
 		h = ComputeHNorm(cornersNew, corners);
         
-        % TEST
-        
-        %paperWidth = 210;
-        %paperHeight = 280;
-       
-		%trimPercentage = 10;
-		%eps = 1 / (1 - trimPercentage/100) - 1;
-		%trimEdges = [
-		%	1+eps, 0,     -eps*imNewWidth/2;
-		%	0,     1+eps, -eps*imNewHeight/2;
-		%	0,     0,     1;
-		%];
-    
-        % disp(trimEdges);
-
-        %disp(h);
-        %h = trimEdges * h;
-        %disp(h);
-        
-        % end TEST
-        
 
 		% Apply it to the original image
 		tform = projective2d(h');
-		imNew = imwarp(im, tform);
-        
-        size(imNew)
-        imNew = imcrop(imNew, [600 600 3692 2498]);
-        
 
-		% Plot the results
-		%subplot(2, 2, 1);
-		%imshow(im); title('Original');
-		%subplot(2, 2, 2);
-		%imshow(foregroundMask); title('Foreground Mask');
-		%subplot(2, 2, 3);
-		%imshow(imGray); title('Lines & Corners');
-		%hold on;
+		[imNew, RB] = imwarp(im, tform);
         
-		%for k = 1:length(lines)
-		%   xy = [lines(k).point1; lines(k).point2];
-		%   plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
-		%   plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
-		%   plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'red');
-        %end
+        upper_left  = corners([1,2],1)';
+        lower_right = corners([1,2],3)';
         
-		%scatter(corners(1, :), corners(2, :), 250, 'w');
-		%subplot(2, 2, 4);
-		%imshow(imNew); title('Result');
+        [lower_right_X,lower_right_Y] = transformPointsForward(tform, lower_right(1), lower_right(2));
+        [X1, Y1] = worldToIntrinsic(RB, lower_right_X, lower_right_Y);
         
+        [upper_left_X, upper_left_Y] = transformPointsForward(tform, upper_left(1), upper_left(2));
+        [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
+
+        
+        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);        
         transformed = imNew;
 end
 
