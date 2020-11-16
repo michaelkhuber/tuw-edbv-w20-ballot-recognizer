@@ -1,9 +1,9 @@
 function Main()
-    I = imread("resources/ballots/4C.jpg");
-    I2 = Transform(I);    
+    original = imread("resources/ballots/4C.jpg");
+    transformed = Transform(original);    
     
     subplot(1,2,1);
-    imshow(I); title("Original");
+    imshow(original); title("Original");
     subplot(1,2,2);
-    imshow(I2); title("Transformed");
+    imshow(transformed); title("Transformed");
 end
