@@ -97,6 +97,7 @@ function transformed = Transform(im)
 		%subplot(2, 2, 3);
 		%imshow(imGray); title('Lines & Corners');
 		%hold on;
+        
 		for k = 1:length(lines)
 		   xy = [lines(k).point1; lines(k).point2];
 		   plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
@@ -147,7 +148,7 @@ function H2to1 = ComputeHNorm(p1, p2)
 		H2to1 = inv(t2)*Hnorm*t1;%turn "normalized H" back to H
 		end
 
-		function Tnorm = norm_matrix(p2)
+function Tnorm = norm_matrix(p2)
 		[row,col] = size(p2); %row=2, col=n
 		avg = sum(p2,2)/col;
 		totaldist = 0;
