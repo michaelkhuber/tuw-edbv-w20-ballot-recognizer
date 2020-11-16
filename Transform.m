@@ -85,9 +85,7 @@ function transformed = Transform(im)
 		% Compute the homography matrix
 		corners = corners';
 		cornersNew = cornersNew';
-        
-        disp(cornersNew);
-        
+                
 		h = ComputeHNorm(cornersNew, corners);
         
 
