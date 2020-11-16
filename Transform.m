@@ -1,209 +1,112 @@
-function transformedBallot = Transform(I)
-    % 6degreesoffreedom.co/document-scanner/    
-    
-    tmp = I;
-    
-    I = im2double(I);
-    I = permute(I,[2 1 3]);
-    I = I(:,end:-1:1,:);
-    
-    fixedSize = 800;
-    
-    
-    imHeight = size(I,1);
-    imWidth = size(I,2);
-    imDiag = sqrt(imWidth^2 + imHeight^2);
-    downScale = fixedSize / imDiag;
-    I = imresize(I,downScale,'bicubic');
-    J = rgb2gray(I);
+function transformed = Transform(im)
+        imGray = rgb2gray(im);
+		imGray = im2double(imGray);
+		[imH, imW] = size(imGray);
 
-    % Detect the 4 dominant lines in the image
-    BW = edge(J,'canny',[],5);
-		[H,T,R] = hough(BW);
-		P = houghpeaks(H,4,'Threshold',0,'NHoodSize',[ceil(fixedSize/4)+1, 41]);
-		theta = T(P(:,2));
-		rho = R(P(:,1));
-		if (length(theta) < 4)
-			fprintf('Could not find all lines\n');
-			return;
+		% Blur the image for denoising
+		H = fspecial('gaussian', [5, 5], 5);
+		imGray = imfilter(imGray, H, 'replicate');
+
+		% Create a gradient magnitude mask
+		gradThreshold = 0.3;
+		[gradMag, ~] = imgradient(imGray);
+		gradMask = (gradMag > gradThreshold);
+
+		% Find all the connected compoments & remove small ones
+		cc = bwconncomp(gradMask);
+		ccSizeThreshold = 1000;
+		for i = 1 : cc.NumObjects
+		  currCC = cc.PixelIdxList{i};
+		  if size(currCC, 1) < ccSizeThreshold
+			gradMask(currCC) = 0;
+		  end
 		end
 
-		% Display detected lines
-		%figure;
-        %subplot(1,2,1);
-		%imagesc(I(:,:,2));
-		%shading flat; 
-        %hold on; 
-        %colormap gray; 
-        %axis equal;
-        
-		for i = 1:length(theta)
-			t = theta(i) / 180 * pi;
-			r = rho(i);
-			if (abs(t) > pi/4)
-				u = 0:size(J,2);
-				v = 1 + (r - u*cos(t) )/ sin(t);    
-			else
-				v = 0:size(J,1);
-				u = 1 + (r - sin(t)*v) / cos(t);
-			end
-			plot(u,v,'g-','LineWidth',2);
+		% Find the mask for foreground with convex hull
+		foregroundMask = bwconvhull(gradMask);
+		edgeMask = edge(foregroundMask, 'Sobel');
+
+		% Use Hough transform to find the borders of the card
+		[H, theta, rho] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [-90:0.5:89.5]);
+		P = houghpeaks(H, 100); % 100 is just an arbitrarily large number
+		lines = houghlines(edgeMask, theta, rho,P, 'FillGap', 30, 'MinLength', 3);
+
+		% Find the intersections of all the lines
+		% Ignore the ones out-of-bound
+		corners = [];
+		for i = 1:length(lines)
+		  for j = 1:length(lines)
+			if i>=j, continue; end;
+			p1 = lines(i).rho;
+			p2 = lines(j).rho;
+			t1 = lines(i).theta;
+			t2 = lines(j).theta;
+
+			x = (p1*sind(t2)-p2*sind(t1))/(cosd(t1)*sind(t2)-sind(t1)*cosd(t2));
+			y = (p1*cosd(t2)-p2*cosd(t1))/(sind(t1)*cosd(t2)-cosd(t1)*sind(t2));
+			if x <= 0 || x > imW || y <= 0 || y > imH, continue; end;
+			corners = [corners; x, y];
+		  end
 		end
 
-		% Computing the document edges and vertices
-
-		% Definition of document vertices p and edges
-		%
-		%  p1          p2    (0,0)
-		%    +---L3---+        +--->
-		%    |        |        |      
-		%    |        |        v   document space
-		%    L1       L2           p1 lies at origin
-		%    |        |
-		%    |        |
-		%    +---L4---+                
-		%  p4          p3    
-		%
-
-		% Compute line equations
-		% The Hough transform returns line equations of the form
-		%   cos(theta)*x + sin(theta)*y = rho
-		% We first sort the lines according to angle. Since the document is 
-		% approximately rectangular, this groups the lines into parallel
-		% lines
-		[~,order] = sort(abs(theta)); 
-		coefficients = [cos(theta' / 180 * pi), sin(theta' / 180 * pi), -rho'];
-		L1 = coefficients(order(1),:); % start with smallest angle
-		L2 = coefficients(order(2),:); % parallel to L1
-		L3 = coefficients(order(3),:); % perpendicular to L1 and L2
-		L4 = coefficients(order(4),:); % parallel to L3
-
-		% Compute p1, p2, p3, p4 as intersections of L1,...,L4;
-		% see above figure.
-		p = zeros(4,3); 
-		p(1,:) = cross(L1,L3); % p1
-		p(2,:) = cross(L2,L3); % p2
-		p(3,:) = cross(L2,L4); % p3
-		p(4,:) = cross(L1,L4); % p4
-		p = p(:,1:2) ./ [p(:,3), p(:,3)];
-
-		% We now need to reorder the points such that they correspond to 
-		% the physical document vertices
-
-		% Sort points into clockwise order (see above figure)
-		v = p(2,:) - p(1,:); 
-		w = p(3,:) - p(1,:);
-		a = (v(1)*w(2) - w(1)*v(2)) / 2; % signed area of triangle (p1,p2,p3)
-		if (a < 0)
-			p = p(end:-1:1,:); % reverse vertex order
+		% Re-order corners this way: tl, tr, br, bl
+		% Assume that the tl corner is closest to 1,1, etc.
+		imageCorners = [          1,           1;
+						size(im, 2),           1;
+						size(im, 2), size(im, 1);
+								  1, size(im, 1)];
+		cornersTmp = [];
+		for i = 1 : 4
+		  cornersVector = corners - repmat(imageCorners(i, :), size(corners, 1), 1);
+		  dist = (cornersVector(:, 1).^2 + cornersVector(:, 2).^2) .^ 0.5;
+		  [~, ind] = min(dist);
+		  cornersTmp(i, :) = corners(ind, :);
 		end
+		corners = cornersTmp;
 
-		% Make sure that first vertex p1 lies either topmost or leftmost,
-		% and lies at the start of a short side
-		edgeLen = [
-			norm(p(1,:) - p(2,:));
-			norm(p(2,:) - p(3,:));
-			norm(p(3,:) - p(4,:));
-			norm(p(4,:) - p(1,:))
-			];
-		sortedEdgeLen = sort(edgeLen);
-		startsShortEdge = (edgeLen' <= sortedEdgeLen(2)); % flag which ones are at a short edge
-		% find the one that is closest to top left corner of image
-		idx = find(startsShortEdge,2);
-		if (norm(p(idx(1),:)) < norm(p(idx(2),:)))
-			p1Idx = idx(1);
-		else
-			p1Idx = idx(2);
-		end
-		order = mod(p1Idx - 1 : p1Idx + 2, 4) + 1; % reorder to start at right vertex
-		p = p(order,:);
+		% Measure the skewed widths & heights
+		heightL = norm(corners(1,:) - corners(4,:));
+		heightR = norm(corners(2,:) - corners(3,:));
+		widthT = norm(corners(1,:) - corners(2,:));
+		widthB = norm(corners(3,:) - corners(4,:));
 
-		% Diplay vertex order
-		for i = 1:4
-			text(p(i,1),p(i,2),sprintf('%d',i),'BackgroundColor','white');
-		end
+		% Set up the target image dimensions
+		% Use the maximum of skewed width and height 
+		% to approxmate the target dimensions
+		imNewHeight = max([heightL, heightR]);
+		imNewWidth  = max([widthT, widthB]);
+		cornersNew = [         1,           1; 
+					  imNewWidth,           1;
+					  imNewWidth, imNewHeight;
+							   1, imNewHeight];
 
-		% Define the document vertices in paper coordinates
-		% We use the A4 standard: 210x280mm
-		paperWidth = 210; 
-		paperHeight = 280;
-		q = [
-			0,          0;               % corresponds to p1
-			paperWidth, 0;               % corresponds to p2
-			paperWidth, paperHeight;     % corresponds to p3
-			0,          paperHeight;     % corresponds to p4
-		];
+		% Compute the homography matrix
+		corners = corners';
+		cornersNew = cornersNew';
+		h = ComputeHNorm(cornersNew, corners);
 
-		% Compute homography p -> q
-		H = computeHomography(p,q);
+		% Apply it to the original image
+		tform = projective2d(h');
+		imNew = imwarp(im, tform);
 
-		% Modify homography to trim the edges by 2% (slight enlargement)
-		trimPercentage = 2;
-		eps = 1 / (1 - trimPercentage/100) - 1;
-		trimEdges = [
-			1+eps, 0,    -eps*paperWidth/2;
-			0,     1+eps, -eps*paperHeight/2;
-			0,     0,     1;
-		];
-    
-		%H = trimEdges * H;
+		% Plot the results
+		%subplot(2, 2, 1);
+		%imshow(im); title('Original');
+		%subplot(2, 2, 2);
+		%imshow(foregroundMask); title('Foreground Mask');
+		%subplot(2, 2, 3);
+		%imshow(imGray); title('Lines & Corners');
+		%hold on;
+		for k = 1:length(lines)
+		   xy = [lines(k).point1; lines(k).point2];
+		   plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
+		   plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
+		   plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'red');
+        end
         
+		%scatter(corners(1, :), corners(2, :), 250, 'w');
+		%subplot(2, 2, 4);
+		%imshow(imNew); title('Result');
         
-     
-
-		% Warp original image to paper coordinates
-		h = size(I,1);
-		w = size(I,2);
-		u = repmat(1:w,[h 1]);
-		v = repmat(1:h,[w 1])';
-		uv = [u(:),v(:),ones(length(u(:)),1)];
-		uv = uv*H';
-		uv = uv(:,1:2) ./ [uv(:,3),uv(:,3)];
-		u = reshape(uv(:,1),h,w);
-		v = reshape(uv(:,2),h,w);
-        
-        disp(H);
-        
-        figure;
-        subplot(1,2,1);
-		surf(u,v,zeros(h,w),I); 
-		shading interp; 
-		colormap gray; 
-		axis equal;
-		axis([0 paperWidth 0 paperHeight]);
-		set(gca,'YDir','reverse');
-        
-        subplot(1,2,2);
-        %imagesc(I(:,:,2));
-        tform = projective2d(H.');
-        %tform = projective2D([1 0 0; .5 1 0; 0 0 1]);
-        img = imwarp(tmp, tform);
-        imshow(img);
-        
-        shading flat;
-        hold on;
-        colormap gray;
-        axis equal;
-        
-		    
-			
-			
-			
-			
-			
-			
-    % TODO - Implement this function
-    transformedBallot = img;
+        transformed = imNew;
 end
-
-function H = computeHomography(p,q)
-		% Quick implementation of homography computation
-		% There are better ways to do this, see Hartley & Zisserman's book
-		A = [p(:,1),p(:,2),ones(4,1),zeros(4,3),-p(:,1).*q(:,1),-p(:,2).*q(:,1);
-			 zeros(4,3),p(:,1),p(:,2),ones(4,1),-p(:,1).*q(:,2),-p(:,2).*q(:,2)];
-		b = [q(:,1);q(:,2)];    
-		Hvec = A\b;
-		H = reshape([Hvec;1],3,3)';
-
-end
-
