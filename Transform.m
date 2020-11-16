@@ -75,6 +75,10 @@ function transformed = Transform(im)
 		% to approxmate the target dimensions
 		imNewHeight = max([heightL, heightR]);
 		imNewWidth  = max([widthT, widthB]);
+        
+        %imNewHeight = 210;
+        %imNewWidth = 280;
+        
 		cornersNew = [         1,           1; 
 					  imNewWidth,           1;
 					  imNewWidth, imNewHeight;
@@ -83,11 +87,40 @@ function transformed = Transform(im)
 		% Compute the homography matrix
 		corners = corners';
 		cornersNew = cornersNew';
+        
+        disp(cornersNew);
+        
 		h = ComputeHNorm(cornersNew, corners);
+        
+        % TEST
+        
+        %paperWidth = 210;
+        %paperHeight = 280;
+       
+		%trimPercentage = 10;
+		%eps = 1 / (1 - trimPercentage/100) - 1;
+		%trimEdges = [
+		%	1+eps, 0,     -eps*imNewWidth/2;
+		%	0,     1+eps, -eps*imNewHeight/2;
+		%	0,     0,     1;
+		%];
+    
+        % disp(trimEdges);
+
+        %disp(h);
+        %h = trimEdges * h;
+        %disp(h);
+        
+        % end TEST
+        
 
 		% Apply it to the original image
 		tform = projective2d(h');
 		imNew = imwarp(im, tform);
+        
+        size(imNew)
+        imNew = imcrop(imNew, [600 600 3692 2498]);
+        
 
 		% Plot the results
 		%subplot(2, 2, 1);
@@ -98,12 +131,12 @@ function transformed = Transform(im)
 		%imshow(imGray); title('Lines & Corners');
 		%hold on;
         
-		for k = 1:length(lines)
-		   xy = [lines(k).point1; lines(k).point2];
-		   plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
-		   plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
-		   plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'red');
-        end
+		%for k = 1:length(lines)
+		%   xy = [lines(k).point1; lines(k).point2];
+		%   plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
+		%   plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
+		%   plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'red');
+        %end
         
 		%scatter(corners(1, :), corners(2, :), 250, 'w');
 		%subplot(2, 2, 4);
