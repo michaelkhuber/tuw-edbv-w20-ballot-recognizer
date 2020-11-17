@@ -13,7 +13,7 @@ function ballotTable = Main()
     templateChoices = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
-    ballotFilenames = BallotFilenames();
+    ballotFilenames = BallotFilenames()';
 
     % - Preallocate validity array
     % - Each entry can have take one of the three values:
@@ -93,6 +93,7 @@ function [validity, choice] = Pipeline(templateChoices, ballotFilename)
     catch
         validity = "unknown (error)";
         choice = "";
+        return
     end
 end
 
