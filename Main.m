@@ -40,6 +40,7 @@ end
 %  ## PIPELINE ##
 %  ##############
 function [validity, choice] = Pipeline(templateChoices, ballotFilename)
+    try
         % - Implemented as suggested in the file
         % "Konzept_Wahlzettel_Erkennung.pdf" -> Point 5: Methodik
         % - For each Ballot, go through the following steps:
@@ -89,5 +90,9 @@ function [validity, choice] = Pipeline(templateChoices, ballotFilename)
             end
             return
         end
+    catch
+        validity = "unknown (error)";
+        choice = "";
+    end
 end
 
