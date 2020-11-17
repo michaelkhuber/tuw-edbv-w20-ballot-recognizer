@@ -76,7 +76,6 @@ function transformed = Transform(im)
 		imNewHeight = max([heightL, heightR]);
 		imNewWidth  = max([widthT, widthB]);
         
-        
 		cornersNew = [         1,           1; 
 					  imNewWidth,           1;
 					  imNewWidth, imNewHeight;
@@ -88,10 +87,8 @@ function transformed = Transform(im)
                 
 		h = ComputeHNorm(cornersNew, corners);
         
-
 		% Apply it to the original image
 		tform = projective2d(h');
-
 		[imNew, RB] = imwarp(im, tform);
         
         upper_left  = corners([1,2],1)';
@@ -104,7 +101,8 @@ function transformed = Transform(im)
         [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
 
         
-        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);        
+        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);  
+        imNew = rgb2gray(imNew);
         transformed = imNew;
 end
 
