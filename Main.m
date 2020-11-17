@@ -47,22 +47,20 @@ function [validity, choice] = Pipeline(templateChoices, ballotFilename)
         %% - STEP 1
         %  - Read in ballot image
         ballotImg = Read(ballotFilename);
+        
         %  - Prepare the image for circle matching
-        preparedBallot = Prepare(ballotImg);
+        % preparedBallot = Prepare(ballotImg);
         
         %% - STEP 2
-        %  - Match circles in ballot
-        %  - output all circles in correct order
-        ballotCircles = Circles(preparedBallot);
+        %  - Normalize and transform the image
+        transformedBallot = Transform(ballotImg);
         
         %% - STEP 3
-        %  - If the right amount of circles cannot be found, perform
-        %  some transformation and try to match the circles again.
-        if length(ballotCircles) ~= length(templateChoices)
-            transformedBallot = Transform(preparedBallot);
-            ballotCircles = Circles(transformedBallot);
-        end
-        %  - If the right amount of circles still cannot be found, declare the ballot's
+        %  - Match circles in ballot
+        %  - output all circles in correct order
+        ballotCircles = Circles(transformedBallot);
+        
+        %  - If the right amount of circles cannot be found, declare the ballot's
         %  validity as unidentifiable -> cancel the pipeline and return
         if length(ballotCircles) ~= length(templateChoices)
             validity = "unidentified";
