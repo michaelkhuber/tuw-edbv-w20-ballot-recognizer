@@ -2,14 +2,14 @@ function markedCircleIndices = CheckMark(ballotCircles)
     markedCircleIndices = [];
    
     for k=1:length(ballotCircles)
-        circle_rgb = ballotCircles{k};
-        
-        % convert to black and white
-        circle = im2gray(circle_rgb);
-
+        circle_input = ballotCircles{k};
+                         
         % convert to binary
-        circle = imbinarize(circle);
-        
+        %circle = imbinarize(circle_input);
+         
+        circle = imbinarize(circle_input);
+        circle = edge(circle,'canny');
+                
         % hough transform to find lines
         [H,theta,rho] = hough(circle);
 
@@ -20,7 +20,7 @@ function markedCircleIndices = CheckMark(ballotCircles)
         plot(x,y,'s','color','black');
         
         % lines have to have particular length
-        lines = houghlines(circle,theta,rho,P,'FillGap',2.5,'MinLength',16);
+        lines = houghlines(circle,theta,rho,P,'FillGap',8.0,'MinLength',45);
     
         % if at least one line is on/in the circle, it was checked
         if(length(lines) > 1)
@@ -28,13 +28,13 @@ function markedCircleIndices = CheckMark(ballotCircles)
            
         end
         
-        figure, imshow(circle_rgb), hold on
+        %figure, imshow(circle_input), hold on
         
-        for k = 1:length(lines)
-            xy = [lines(k).point1; lines(k).point2];
-            plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
+        %for n = 1:length(lines)
+            %xy = [lines(n).point1; lines(n).point2];
+            %plot(xy(:,1),xy(:,2),'LineWidth',2,'Color','green');
 
-        end
+        %end
     end
     
 end
