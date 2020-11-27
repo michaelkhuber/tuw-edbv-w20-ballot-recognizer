@@ -1,12 +1,19 @@
-function transformed = Transform(im)
-        doPlot = true;
-        clf('reset');
+function transformed = Transform(im, ballotFilename)
+        showPlot = false;
+        savePlot = true;
         
         %resize image to have 2000 pixels in height without deforming
         newSize = [2000,size(im,2)/size(im,1) * 2000];
         im = imresize(im,newSize);
         
-        if(doPlot) 
+        if(showPlot)
+            f = figure(1);
+            clf('reset');
+        elseif(savePlot)
+            f = figure('visible','off');
+        end
+        
+        if(showPlot || savePlot)
             subplot(3, 3, 1);
             imshow(im); title('Original');
         end
@@ -24,7 +31,7 @@ function transformed = Transform(im)
 		[gradMag, ~] = imgradient(imGray);
 		gradMask = (gradMag > gradThreshold);
         
-        if(doPlot) 
+        if(showPlot || savePlot) 
             subplot(3, 3, 2);
             imshow(gradMask); title('Grad Mask');
         end
@@ -37,7 +44,7 @@ function transformed = Transform(im)
         edgeMask = edge(gradMask, 'canny');
         %edgeMask = gradMask;
         
-        if(doPlot) 
+        if(showPlot || savePlot) 
             subplot(3, 3, 3);
             imshow(edgeMask); title('Edge Mask');
         end
@@ -54,7 +61,7 @@ function transformed = Transform(im)
         numPeaks = ceil(100);
 		P2 = houghpeaks(H2, numPeaks);
         
-        if(doPlot)
+        if(showPlot || savePlot)
             subplot(3, 3, 4);
             imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,...
           'InitialMagnification','fit'); %plot Hough transformation For Vertical Lines
@@ -70,7 +77,7 @@ function transformed = Transform(im)
 		lines2 = houghlines(edgeMask, theta2, rho2,P2, 'FillGap', 1000, 'MinLength', 500);
         
         h1 = subplot(3, 3, 5);
-        if(doPlot)
+        if(showPlot || savePlot) 
             imshow(imGray); title('Lines & Corners');
             hold on;
             plotLines(lines);
@@ -104,10 +111,10 @@ function transformed = Transform(im)
         hull = [];
         hull(:,:) = intersections(k,:);
         
-        if(doPlot)
+        if(showPlot || savePlot) 
             plot(intersections(:,1),intersections(:,2),'*', 'Color', 'blue');
             hold on;
-            %plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
+            plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
         end
         
         %Reduce the points inside the hull set until there is only 4 points
@@ -144,18 +151,20 @@ function transformed = Transform(im)
         
         % Order the 4 corner points so that the sum of the distance to the outter
         % image borders is as small as possible
+        % the intention is to order the corners as top left, top right,
+        % bottom right, bottom left
         minDist = inf;
         corners = [];
         tmpCorners = simplifiedHull;
-        middleCornerPoints = simplifiedHull;
+        middlePoints = simplifiedHull;
         for i = 1:4
             for j = 1:4
                 tmpCorners(j,:) = simplifiedHull(mod(i+j-1,4)+1,:);
             end
             dist = 0;
             for j = 1:4
-                middleCornerPoints(j,:) = tmpCorners(j,:) + (tmpCorners(mod(j,4)+1,:) - tmpCorners(j,:))/2;
-                dist = dist + norm(middleCornerPoints(j,:) - middleImagePoints(j, :));
+                middlePoints(j,:) = tmpCorners(j,:) + (tmpCorners(mod(j,4)+1,:) - tmpCorners(j,:))/2;
+                dist = dist + norm(middlePoints(j,:) - middleImagePoints(j, :));
             end
             if(dist < minDist)
                 minDist = dist;
@@ -165,16 +174,11 @@ function transformed = Transform(im)
         end
             
         for j = 1:4
-            middleCornerPoints(j,:) = corners(j,:) + (corners(mod(j,4)+1,:) - corners(j,:))/2;
+            middlePoints(j,:) = corners(j,:) + (corners(mod(j,4)+1,:) - corners(j,:))/2;
         end
         
-        
-       plot(corners(1,1),corners(1,2),'o', 'Color', 'red', 'MarkerSize', 30);
-       if(doPlot)
+       if(showPlot || savePlot) 
             hold on;
-            plot(corners(:,1),corners(:,2),'Color', 'red', 'lineWidth', 2.0);
-            hold on;
-            
             for j = 1:4
                 plot(corners(j,1),corners(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
                 text(corners(j,1),corners(j,2), num2str(j),'Color', 'blue','FontSize',20);
@@ -212,7 +216,7 @@ function transformed = Transform(im)
 		tform = projective2d(h');
 		[imNew, RB] = imwarp(im, tform);
         
-        if(doPlot) 
+        if(showPlot || savePlot) 
             % Plot the results
             subplot(3, 3, 6);
             imshow(imNew); title('Transformed');
@@ -234,10 +238,14 @@ function transformed = Transform(im)
         newSize = [2000,size(imNew,2)/size(imNew,1) * 2000];
         imNew = imresize(imNew,newSize);
 
-        if(doPlot) 
+        if(showPlot || savePlot) 
             % Plot the results
             subplot(3, 3, 7);
             imshow(imNew); title('Cropped');
+        end
+        
+        if(savePlot)
+            print(f,strcat("resources/results/Transform_", ballotFilename),'-dpng','-r700'); 
         end
 
         transformed = imNew;

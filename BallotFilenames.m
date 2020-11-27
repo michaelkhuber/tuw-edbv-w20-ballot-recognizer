@@ -16,8 +16,9 @@ function ballotFilenames = BallotFilenames()
     bla2 = ballotFiles(2);
     bla3 = ballotFiles(3);
     
-    ballotFilenames = strings(1, length(fileNames));
+    ballotFilenames = strings(2, length(fileNames));
     for i = 1:length(ballotFiles)
-        ballotFilenames(i) = fullfile(ballotFolder, fileNames(i));
+        ballotFilenames(i,1) = fullfile(ballotFolder, fileNames(i));
+        ballotFilenames(i,2) = fileNames(i);
     end
 end
