@@ -1,3 +1,6 @@
+% AUTHORS
+% Jakob @ TUWIEN
+% Binder Richard @ TUWIEN
 function transformed = Transform(im, ballotFilename)
         global showPlot;
         global savePlot;
@@ -25,27 +28,60 @@ function transformed = Transform(im, ballotFilename)
         
         normalized = adapthisteq(imGray,'clipLimit',0.02,'Distribution','rayleigh');
 		[imH, imW] = size(normalized);
-
-        minComponents = 30;
-        maxComponents = 50;
-        [maskedImage, numComponents] = maskImage(normalized, 5, 0, 1);
         
-        if(numComponents < minComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 0, -1);
+        minComponents = 500;
+        maxComponents = 10000;
+        med = -2;
+        numComponents = inf;
+        while(numComponents < minComponents || numComponents > maxComponents)
+            med = med+2;
+            [maskedImage, numComponents] = maskImage(normalized, 5, med, 0, 1);
+            if(med>=8) 
+                break;
+            end
         end
         
-        if(numComponents > maxComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 1, 2);
+        minComponents = 50;
+        maxComponents = 100;
+        dil = -1;
+        numComponents = inf;
+        while(numComponents > maxComponents)
+            dil = dil+2;
+            [maskedImage, numComponents] = maskImage(normalized, 5, med, 0, dil);
+            if(dil>=6) 
+                break;
+            end
         end
         
-        if(numComponents > maxComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 10, 3);
+        maxComponents = 60;
+        sd = -2;
+        numComponents = inf;
+        while(numComponents > maxComponents)
+            sd = sd+1;
+            [maskedImage, numComponents] = maskImage(normalized, 5, med, sd, dil);
+            if(sd>=3) 
+                break;
+            end
         end
         
+        minPeaks = 10;
         maxPeaks = 30;
         [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
         P = houghpeaks(H, maxPeaks);
         P2 = houghpeaks(H2, maxPeaks);
+        if(length(P) < minPeaks || length(P2) < minPeaks)
+            [maskedImage, numComponents] = maskImage(normalized, 5, med, sd, dil+2);
+            [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
+            P = houghpeaks(H, maxPeaks);
+            P2 = houghpeaks(H2, maxPeaks);
+        end
+        
+%         if(numComponents > maxComponents || length(P) >= maxPeaks || length(P2) >= maxPeaks)
+%             [maskedImage, numComponents] = maskImage(normalized, 5, 10, 3);
+%             [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
+%             P = houghpeaks(H, maxPeaks);
+%             P2 = houghpeaks(H2, maxPeaks);
+%         end
         
         if(showPlot || savePlot)
             subplot(3, 3, 6);
@@ -297,7 +333,7 @@ end
 
 %reduce components of input mask
 % numComponents is the number of remaining components
-function [componentMask, numComponents] = reduceComponents(gradMask, strength)
+function componentMask = reduceComponents(gradMask, strength)
 		cc = bwconncomp(gradMask, 4);
         
         ccSizes = zeros(cc.NumObjects,1);
@@ -315,11 +351,9 @@ function [componentMask, numComponents] = reduceComponents(gradMask, strength)
 		  end
         end
         componentMask = gradMask;
-		cc = bwconncomp(gradMask, 4);
-        numComponents = cc.NumObjects;
 end
 
-function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStrength, componentReducingStrength)
+function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStrength, componentReducingStrength, dilationStrength)
         global showPlot;
         global savePlot;
         
@@ -346,7 +380,7 @@ function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStre
         end
         
 		% Find all the connected compoments & remove small ones
-        [componentMask, numComponents] = reduceComponents(gradMask, componentReducingStrength);
+        componentMask = reduceComponents(gradMask, componentReducingStrength);
         
         if(showPlot || savePlot) 
             subplot(3, 3, 4);
@@ -356,12 +390,20 @@ function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStre
 		% Find edge mask
         edgeMask = edge(componentMask, 'canny');
         
+		DilationMask = imfilter(edgeMask, H, 'replicate');
+        se = strel('line',dilationStrength,dilationStrength*4);
+        DilationMask = imdilate(edgeMask, se);
+        se = strel('line',dilationStrength*4,dilationStrength);
+        DilationMask = imdilate(DilationMask, se);
+        
         if(showPlot || savePlot) 
             subplot(3, 3, 5);
-            imshow(edgeMask); title('Edge Mask');
+            imshow(DilationMask); title('DilationEdge Mask');
         end
         
-        maskedImage = componentMask;
+        maskedImage = DilationMask;
+		cc = bwconncomp(maskedImage, 4);
+        numComponents = cc.NumObjects;
 end
 
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
