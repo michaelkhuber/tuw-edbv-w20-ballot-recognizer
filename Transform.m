@@ -1,11 +1,13 @@
 function transformed = Transform(im, ballotFilename)
+        global showPlot;
+        global savePlot;
         showPlot = false;
         savePlot = true;
         
         %resize image to have 2000 pixels in height without deforming
         newSize = [2000,size(im,2)/size(im,1) * 2000];
         im = imresize(im,newSize);
-        
+            
         if(showPlot)
             f = figure(1);
             clf('reset');
@@ -20,49 +22,33 @@ function transformed = Transform(im, ballotFilename)
         
         imGray = rgb2gray(im);
 		imGray = im2double(imGray);
-		[imH, imW] = size(imGray);
-
-		% Blur the image for denoising
-		H = fspecial('gaussian', [5, 5], 5);
-		imGray = imfilter(imGray, H, 'replicate');
-
-		% Create a gradient magnitude mask
-		gradThreshold = mean(imGray(:)) - 2*std(imGray(:));
-		[gradMag, ~] = imgradient(imGray);
-		gradMask = (gradMag > gradThreshold);
         
-        if(showPlot || savePlot) 
-            subplot(3, 3, 2);
-            imshow(gradMask); title('Grad Mask');
+        normalized = adapthisteq(imGray,'clipLimit',0.02,'Distribution','rayleigh');
+		[imH, imW] = size(normalized);
+
+        minComponents = 30;
+        maxComponents = 50;
+        [maskedImage, numComponents] = maskImage(normalized, 5, 0, 1);
+        
+        if(numComponents < minComponents)
+            [maskedImage, numComponents] = maskImage(normalized, 5, 0, -1);
         end
-
-		% Find all the connected compoments & remove small ones
-        gradMask = reduceComponents(gradMask);
-
-		% Find the mask for foreground with convex hull
-		foregroundMask = bwconvhull(gradMask);
-        edgeMask = edge(gradMask, 'canny');
-        %edgeMask = gradMask;
         
-        if(showPlot || savePlot) 
-            subplot(3, 3, 3);
-            imshow(edgeMask); title('Edge Mask');
+        if(numComponents > maxComponents)
+            [maskedImage, numComponents] = maskImage(normalized, 5, 1, 2);
         end
-
-		% Use Hough transform to find vertical borders: Theta goes from 0°
-		% to 90°
-		[H, theta, rho] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [0.0:0.5:85.5]);
-        numPeaks = ceil(100);
-		P = houghpeaks(H, numPeaks);
         
-		% Use Hough transform to find horizontal borders: Theta goes from -90°
-		% to 0°
-		[H2, theta2, rho2] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [-90.0:0.5:0.0]);
-        numPeaks = ceil(100);
-		P2 = houghpeaks(H2, numPeaks);
+        if(numComponents > maxComponents)
+            [maskedImage, numComponents] = maskImage(normalized, 5, 10, 3);
+        end
+        
+        maxPeaks = 30;
+        [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
+        P = houghpeaks(H, maxPeaks);
+        P2 = houghpeaks(H2, maxPeaks);
         
         if(showPlot || savePlot)
-            subplot(3, 3, 4);
+            subplot(3, 3, 6);
             imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,...
           'InitialMagnification','fit'); %plot Hough transformation For Vertical Lines
              title('Hough transform For Vertical Lines');
@@ -73,11 +59,11 @@ function transformed = Transform(im, ballotFilename)
         end
         
         % Get Lines from Hough Transformation
-		lines = houghlines(edgeMask, theta, rho,P, 'FillGap', 1000, 'MinLength', 500);
-		lines2 = houghlines(edgeMask, theta2, rho2,P2, 'FillGap', 1000, 'MinLength', 500);
+		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 100, 'MinLength', 100);
+		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 100, 'MinLength', 100);
         
-        h1 = subplot(3, 3, 5);
         if(showPlot || savePlot) 
+            subplot(3, 3, 7);
             imshow(imGray); title('Lines & Corners');
             hold on;
             plotLines(lines);
@@ -218,7 +204,7 @@ function transformed = Transform(im, ballotFilename)
         
         if(showPlot || savePlot) 
             % Plot the results
-            subplot(3, 3, 6);
+            subplot(3, 3, 8);
             imshow(imNew); title('Transformed');
         end
         
@@ -240,7 +226,7 @@ function transformed = Transform(im, ballotFilename)
 
         if(showPlot || savePlot) 
             % Plot the results
-            subplot(3, 3, 7);
+            subplot(3, 3, 9);
             imshow(imNew); title('Cropped');
         end
         
@@ -309,7 +295,9 @@ function Tnorm = norm_matrix(p2)
 		Tnorm = Tscale*Ttran;
 end
 
-function newGradMask = reduceComponents(gradMask)
+%reduce components of input mask
+% numComponents is the number of remaining components
+function [componentMask, numComponents] = reduceComponents(gradMask, strength)
 		cc = bwconncomp(gradMask, 4);
         
         ccSizes = zeros(cc.NumObjects,1);
@@ -318,8 +306,7 @@ function newGradMask = reduceComponents(gradMask)
 		  ccSizes(i) = size(currCC, 1);
         end
         
-		ccSizeThreshold = mean(ccSizes(:)) + std(ccSizes(:));
-       % ccSizeThreshold = 0;
+		ccSizeThreshold = mean(ccSizes(:)) + strength*std(ccSizes(:));
         
 		for i = 1 : cc.NumObjects
 		  currCC = cc.PixelIdxList{i};
@@ -327,5 +314,62 @@ function newGradMask = reduceComponents(gradMask)
 			gradMask(currCC) = 0;
 		  end
         end
-        newGradMask = gradMask;
+        componentMask = gradMask;
+		cc = bwconncomp(gradMask, 4);
+        numComponents = cc.NumObjects;
+end
+
+function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStrength, componentReducingStrength)
+        global showPlot;
+        global savePlot;
+        
+		% Blur the image for denoising
+		H = fspecial('gaussian', [gaussStrength, gaussStrength], gaussStrength);
+		blurredImg = imfilter(img, H, 'replicate');
+        if(medianStrength > 0)
+            blurredImg = medfilt2(blurredImg, [medianStrength, medianStrength]);
+        end
+        
+        if(showPlot || savePlot) 
+            subplot(3, 3, 2);
+            imshow(blurredImg); title('Histogram Equalization');
+        end
+
+		% Create a gradient magnitude mask
+		gradThreshold = mean(blurredImg(:)) - 2*std(blurredImg(:));
+		[gradMag, ~] = imgradient(blurredImg);
+		gradMask = (gradMag > gradThreshold);
+        
+        if(showPlot || savePlot) 
+            subplot(3, 3, 3);
+            imshow(gradMask); title('Grad Mask');
+        end
+        
+		% Find all the connected compoments & remove small ones
+        [componentMask, numComponents] = reduceComponents(gradMask, componentReducingStrength);
+        
+        if(showPlot || savePlot) 
+            subplot(3, 3, 4);
+            imshow(componentMask); title('Component Reduction');
+        end
+
+		% Find edge mask
+        edgeMask = edge(componentMask, 'canny');
+        
+        if(showPlot || savePlot) 
+            subplot(3, 3, 5);
+            imshow(edgeMask); title('Edge Mask');
+        end
+        
+        maskedImage = componentMask;
+end
+
+function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
+		% Use Hough transform to find vertical borders: Theta goes from 0°
+		% to 90°
+		[H, theta, rho] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [0.0:0.5:85.5]);
+        
+		% Use Hough transform to find horizontal borders: Theta goes from -90°
+		% to 0°
+		[H2, theta2, rho2] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [-90.0:0.5:0.0]);
 end

@@ -1,17 +1,2 @@
 index,filename,validity,choices,errors
-1,1A.jpg,valid,SPOE,""
-2,1B.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 3"
-3,1C.jpg,valid,SPOE,""
-4,1D.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 3"
-5,2A.jpg,valid,BIER,""
-6,2B.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 0"
-7,2C.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 23"
-8,3A.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 0"
-9,3B.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 5"
-10,3C.jpg,invalid,,"Invalid number of marked circles, should be 1, but was: 0"
-11,4A.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 6"
-12,4B.jpg,invalid,,"Invalid number of marked circles, should be 1, but was: 0"
-13,4C.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 8"
-14,5A.jpg,invalid,,"Invalid number of marked circles, should be 1, but was: 0"
-15,5B.jpg,invalid,,"Invalid number of marked circles, should be 1, but was: 0"
-16,5C.jpg,unidentified,,"Invalid number of detected circles, should be 10, but was: 2"
+1,2C.jpg,invalid,,unknown (program error)
