@@ -1,4 +1,17 @@
 index,ballotFilenames,validity,choices
-1,resources/ballots/ballot0.png,invalid,SPOE FPOE OEVP 
-2,resources/ballots/ballot1.png,invalid,SPOE FPOE OEVP 
-3,resources/ballots/ballot2.png,invalid,SPOE FPOE OEVP 
+1,resources\ballots\1A.jpg,unknown (error),
+2,resources\ballots\1B.jpg,unknown (error),
+3,resources\ballots\1C.jpg,unknown (error),
+4,resources\ballots\1D.jpg,unknown (error),
+5,resources\ballots\2A.jpg,unknown (error),
+6,resources\ballots\2B.jpg,unknown (error),
+7,resources\ballots\2C.jpg,unknown (error),
+8,resources\ballots\3A.jpg,unknown (error),
+9,resources\ballots\3B.jpg,unknown (error),
+10,resources\ballots\3C.jpg,unknown (error),
+11,resources\ballots\4A.jpg,unknown (error),
+12,resources\ballots\4B.jpg,unknown (error),
+13,resources\ballots\4C.jpg,unknown (error),
+14,resources\ballots\5A.jpg,unknown (error),
+15,resources\ballots\5B.jpg,unknown (error),
+16,resources\ballots\5C.jpg,unknown (error),

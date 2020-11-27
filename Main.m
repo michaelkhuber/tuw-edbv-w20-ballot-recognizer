@@ -14,6 +14,10 @@ function ballotTable = Main()
 
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames()';
+    % - Manually choose Filenames (meant for debugging)
+    % ballotFilenames = ["resources\ballots\1B.jpg";"resources\ballots\1C.jpg"];
+    % ballotFilenames = ["resources\ballots\2A.jpg";"resources\ballots\2B.jpg"];
+    % ballotFilenames = ["resources\ballots\4A.jpg"];
 
     % - Preallocate validity array
     % - Each entry can have take one of the three values:
@@ -90,7 +94,8 @@ function [validity, choice] = Pipeline(templateChoices, ballotFilename)
             end
             return
         end
-    catch
+    catch e
+        warning(getReport(e));
         validity = "unknown (error)";
         choice = "";
         return

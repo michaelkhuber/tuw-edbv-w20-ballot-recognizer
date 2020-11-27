@@ -1,4 +1,16 @@
 function transformed = Transform(im)
+        doPlot = true;
+        clf('reset');
+        
+        %resize image to have 2000 pixels in height without deforming
+        newSize = [2000,size(im,2)/size(im,1) * 2000];
+        im = imresize(im,newSize);
+        
+        if(doPlot) 
+            subplot(3, 3, 1);
+            imshow(im); title('Original');
+        end
+        
         imGray = rgb2gray(im);
 		imGray = im2double(imGray);
 		[imH, imW] = size(imGray);
@@ -8,35 +20,71 @@ function transformed = Transform(im)
 		imGray = imfilter(imGray, H, 'replicate');
 
 		% Create a gradient magnitude mask
-		gradThreshold = 0.3;
+		gradThreshold = mean(imGray(:)) - 2*std(imGray(:));
 		[gradMag, ~] = imgradient(imGray);
 		gradMask = (gradMag > gradThreshold);
+        
+        if(doPlot) 
+            subplot(3, 3, 2);
+            imshow(gradMask); title('Grad Mask');
+        end
 
 		% Find all the connected compoments & remove small ones
-		cc = bwconncomp(gradMask);
-		ccSizeThreshold = 1000;
-		for i = 1 : cc.NumObjects
-		  currCC = cc.PixelIdxList{i};
-		  if size(currCC, 1) < ccSizeThreshold
-			gradMask(currCC) = 0;
-		  end
-		end
+        gradMask = reduceComponents(gradMask);
 
 		% Find the mask for foreground with convex hull
 		foregroundMask = bwconvhull(gradMask);
-		edgeMask = edge(foregroundMask, 'Sobel');
+        edgeMask = edge(gradMask, 'canny');
+        %edgeMask = gradMask;
+        
+        if(doPlot) 
+            subplot(3, 3, 3);
+            imshow(edgeMask); title('Edge Mask');
+        end
 
-		% Use Hough transform to find the borders of the card
-		[H, theta, rho] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [-90:0.5:89.5]);
-		P = houghpeaks(H, 100); % 100 is just an arbitrarily large number
-		lines = houghlines(edgeMask, theta, rho,P, 'FillGap', 30, 'MinLength', 3);
+		% Use Hough transform to find vertical borders: Theta goes from 0°
+		% to 90°
+		[H, theta, rho] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [0.0:0.5:85.5]);
+        numPeaks = ceil(100);
+		P = houghpeaks(H, numPeaks);
+        
+		% Use Hough transform to find horizontal borders: Theta goes from -90°
+		% to 0°
+		[H2, theta2, rho2] = hough(edgeMask, 'RhoResolution', 5, 'Theta', [-90.0:0.5:0.0]);
+        numPeaks = ceil(100);
+		P2 = houghpeaks(H2, numPeaks);
+        
+        if(doPlot)
+            subplot(3, 3, 4);
+            imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,...
+          'InitialMagnification','fit'); %plot Hough transformation For Vertical Lines
+             title('Hough transform For Vertical Lines');
+             xlabel('\theta'), ylabel('\rho');
+             axis on, axis normal, hold on;
+            plot(theta(P(:,2)),rho(P(:,1)),'s','color','white'); %plot peaks
+            colormap(gca,hot);
+        end
+        
+        % Get Lines from Hough Transformation
+		lines = houghlines(edgeMask, theta, rho,P, 'FillGap', 1000, 'MinLength', 500);
+		lines2 = houghlines(edgeMask, theta2, rho2,P2, 'FillGap', 1000, 'MinLength', 500);
+        
+        h1 = subplot(3, 3, 5);
+        if(doPlot)
+            imshow(imGray); title('Lines & Corners');
+            hold on;
+            plotLines(lines);
+            plotLines(lines2);
+        end
+        
+        lines = [lines, lines2];
 
 		% Find the intersections of all the lines
 		% Ignore the ones out-of-bound
-		corners = [];
+		intersections = [];
 		for i = 1:length(lines)
 		  for j = 1:length(lines)
-			if i>=j, continue; end;
+            if( j <= i ), continue; end
 			p1 = lines(i).rho;
 			p2 = lines(j).rho;
 			t1 = lines(i).theta;
@@ -44,25 +92,98 @@ function transformed = Transform(im)
 
 			x = (p1*sind(t2)-p2*sind(t1))/(cosd(t1)*sind(t2)-sind(t1)*cosd(t2));
 			y = (p1*cosd(t2)-p2*cosd(t1))/(sind(t1)*cosd(t2)-cosd(t1)*sind(t2));
-			if x <= 0 || x > imW || y <= 0 || y > imH, continue; end;
-			corners = [corners; x, y];
+			if (isnan(x) || isnan(y) || x <= 0 || x > imW || y <= 0 || y > imH)
+                continue;
+            end
+			intersections = [intersections; x, y];
 		  end
-		end
+        end
 
-		% Re-order corners this way: tl, tr, br, bl
-		% Assume that the tl corner is closest to 1,1, etc.
-		imageCorners = [          1,           1;
-						size(im, 2),           1;
-						size(im, 2), size(im, 1);
-								  1, size(im, 1)];
-		cornersTmp = [];
-		for i = 1 : 4
-		  cornersVector = corners - repmat(imageCorners(i, :), size(corners, 1), 1);
-		  dist = (cornersVector(:, 1).^2 + cornersVector(:, 2).^2) .^ 0.5;
-		  [~, ind] = min(dist);
-		  cornersTmp(i, :) = corners(ind, :);
-		end
-		corners = cornersTmp;
+        % find the convex hull from all the intersection points
+		k = convhull(intersections);
+        hull = [];
+        hull(:,:) = intersections(k,:);
+        
+        if(doPlot)
+            plot(intersections(:,1),intersections(:,2),'*', 'Color', 'blue');
+            hold on;
+            %plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
+        end
+        
+        %Reduce the points inside the hull set until there is only 4 points
+        %this should be the corner points of our rectangle hull
+        simplifiedHull = hull;
+        while (length(simplifiedHull) > 4)
+            minDist = inf;
+            n = length(simplifiedHull);
+            removeIndex = 0;
+            
+            for i=1:n
+                pt = [simplifiedHull(i,:), 0];
+                v1 = [simplifiedHull(mod(i-2,n)+1,:), 0];
+                v2 = [simplifiedHull(mod(i,n)+1,:), 0];
+                
+                a = v1 - v2;
+                b = pt - v2;
+                distToLine = norm(cross(a,b)) / norm(a);
+                
+                if(distToLine <= minDist) 
+                    minDist = distToLine;
+                    removeIndex = i;
+                end
+            end
+            simplifiedHull(removeIndex,:) = [];
+        end
+        
+        middleImagePoints = [
+            size(im, 2)/2, 1;
+            size(im, 2), size(im, 1)/2;
+            size(im, 2)/2, size(im, 1);
+            1, size(im, 1)/2;
+            ];     
+        
+        % Order the 4 corner points so that the sum of the distance to the outter
+        % image borders is as small as possible
+        minDist = inf;
+        corners = [];
+        tmpCorners = simplifiedHull;
+        middleCornerPoints = simplifiedHull;
+        for i = 1:4
+            for j = 1:4
+                tmpCorners(j,:) = simplifiedHull(mod(i+j-1,4)+1,:);
+            end
+            dist = 0;
+            for j = 1:4
+                middleCornerPoints(j,:) = tmpCorners(j,:) + (tmpCorners(mod(j,4)+1,:) - tmpCorners(j,:))/2;
+                dist = dist + norm(middleCornerPoints(j,:) - middleImagePoints(j, :));
+            end
+            if(dist < minDist)
+                minDist = dist;
+                corners = tmpCorners;
+                a=0;
+            end
+        end
+            
+        for j = 1:4
+            middleCornerPoints(j,:) = corners(j,:) + (corners(mod(j,4)+1,:) - corners(j,:))/2;
+        end
+        
+        
+       plot(corners(1,1),corners(1,2),'o', 'Color', 'red', 'MarkerSize', 30);
+       if(doPlot)
+            hold on;
+            plot(corners(:,1),corners(:,2),'Color', 'red', 'lineWidth', 2.0);
+            hold on;
+            
+            for j = 1:4
+                plot(corners(j,1),corners(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
+                text(corners(j,1),corners(j,2), num2str(j),'Color', 'blue','FontSize',20);
+%                 plot(middleCornerPoints(j,1),middleCornerPoints(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
+%                 text(middleCornerPoints(j,1),middleCornerPoints(j,2), num2str(j),'Color', 'red','FontSize',30);
+%                 plot(middleImagePoints(j,1),middleImagePoints(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
+%                 text(middleImagePoints(j,1),middleImagePoints(j,2), num2str(j),'Color', 'red','FontSize',30);
+            end
+       end
 
 		% Measure the skewed widths & heights
 		heightL = norm(corners(1,:) - corners(4,:));
@@ -91,6 +212,13 @@ function transformed = Transform(im)
 		tform = projective2d(h');
 		[imNew, RB] = imwarp(im, tform);
         
+        if(doPlot) 
+            % Plot the results
+            subplot(3, 3, 6);
+            imshow(imNew); title('Transformed');
+        end
+        
+        %Crop the image to to the 4 corners of ballot
         upper_left  = corners([1,2],1)';
         lower_right = corners([1,2],3)';
         
@@ -99,11 +227,29 @@ function transformed = Transform(im)
         
         [upper_left_X, upper_left_Y] = transformPointsForward(tform, upper_left(1), upper_left(2));
         [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
-
         
-        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);  
-        imNew = rgb2gray(imNew);
+        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);
+        
+        %resize image to have 2000 pixels in height without deforming
+        newSize = [2000,size(imNew,2)/size(imNew,1) * 2000];
+        imNew = imresize(imNew,newSize);
+
+        if(doPlot) 
+            % Plot the results
+            subplot(3, 3, 7);
+            imshow(imNew); title('Cropped');
+        end
+
         transformed = imNew;
+end
+
+function plotLines(lines)
+    for k = 1:length(lines)
+       xy = [lines(k).point1; lines(k).point2];
+       plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
+       plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
+       %plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'red');
+    end
 end
 
 function H2to1 = ComputeHNorm(p1, p2)
@@ -153,4 +299,25 @@ function Tnorm = norm_matrix(p2)
 		Ttran =  [1 0 -avg(1);0 1 -avg(2);0 0 1];
 		Tscale = [k 0 0;0 k 0;0 0 1];
 		Tnorm = Tscale*Ttran;
+end
+
+function newGradMask = reduceComponents(gradMask)
+		cc = bwconncomp(gradMask, 4);
+        
+        ccSizes = zeros(cc.NumObjects,1);
+        for i = 1 : cc.NumObjects
+		  currCC = cc.PixelIdxList{i};
+		  ccSizes(i) = size(currCC, 1);
+        end
+        
+		ccSizeThreshold = mean(ccSizes(:)) + std(ccSizes(:));
+       % ccSizeThreshold = 0;
+        
+		for i = 1 : cc.NumObjects
+		  currCC = cc.PixelIdxList{i};
+		  if size(currCC, 1) < ccSizeThreshold
+			gradMask(currCC) = 0;
+		  end
+        end
+        newGradMask = gradMask;
 end
