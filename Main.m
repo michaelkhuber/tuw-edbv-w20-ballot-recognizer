@@ -15,7 +15,7 @@ function ballotTable = Main()
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames();
     % - Manually choose Filenames (meant for debugging)
-    ballotFilenames = ["resources/ballots/3B.jpg", "3B.jpg"; "resources/ballots/1A.jpg", "1A.jpg"];
+    % ballotFilenames = ["resources/ballots/1A.jpg", "1A.jpg"];
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate validity array

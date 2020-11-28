@@ -32,81 +32,16 @@ function transformed = Transform(im, ballotFilenameIn)
             imshow(im); title('Original');
         end
         
-        [noBgrdImg, pltCount] = cDarkendBackground(im, pltCount);
-		[imH, imW] = size(noBgrdImg);
-        
-%         % find an image mask in which there is a given number of
-%         % components
-%         % this includes tuning parameters for applying a gauss filter,
-%         % applying a median filter, peforming component reduction and
-%         % performing dilation onto vertical/horizontal lines
-%         % these parameters are tuned until we find given component numbers
-%         % the implementation is improvable, so it might not always work 100% well
-%         minComponents = 500;
-%         maxComponents = 10000;
-%         med = -2;
-%         numComponents = inf;
-%         while(numComponents < minComponents || numComponents > maxComponents)
-%             med = med+2;
-%             [maskedImage, numComponents, pltCount2] = maskImage(noBgrdImg, pltCount, 5, med, 0, 1);
-%             if(med>=8) 
-%                 break;
-%             end
-%         end
-%         
-%         minComponents = 50;
-%         maxComponents = 100;
-%         dil = -1;
-%         numComponents = inf;
-%         while(numComponents > maxComponents)
-%             dil = dil+2;
-%             [maskedImage, numComponents, pltCount2] = maskImage(noBgrdImg, pltCount, 5, med, 0, dil);
-%             if(dil>=6) 
-%                 break;
-%             end
-%         end
-%         
-%         maxComponents = 60;
-%         sd = -2;
-%         numComponents = inf;
-%         while(numComponents > maxComponents)
-%             sd = sd+1;
-%             [maskedImage, numComponents, pltCount2] = maskImage(noBgrdImg, pltCount, 5, med, sd, dil);
-%             if(sd>=3) 
-%                 break;
-%             end
-%         end
-%         
-%         % perform hough transformation onto the masked image
-%         % if we cannot find enough peaks, then we again tune image mask
-%         % parameters until we find enough peaks
-%         % this is also improvable, and might not always work 100% well
-%         minPeaks = 10;
-%         maxPeaks = 30;
-%         [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
-%         P = houghpeaks(H, maxPeaks);
-%         P2 = houghpeaks(H2, maxPeaks);
-%         if(length(P) < minPeaks || length(P2) < minPeaks)
-%             [maskedImage, numComponents, pltCount2] = maskImage(noBgrdImg, pltCount, 5, med, sd, dil+2);
-%             [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
-%             P = houghpeaks(H, maxPeaks);
-%             P2 = houghpeaks(H2, maxPeaks);
-%         end
+        [normalizedImage, pltCount] = normalize(im, pltCount);
+		[imH, imW] = size(normalizedImage);
         
         minPeaks = 10;
-        maxPeaks = 20;
+        maxPeaks = 40;
         
-        
-        [maskedImage, numComponents, pltCount2] = maskImage2(noBgrdImg, pltCount, 5, 0, 0, 0);
+        [maskedImage, pltCount] = maskImage(normalizedImage, pltCount);
         [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 5);
         P = houghpeaks(H, maxPeaks);
-        P2 = houghpeaks(H2, maxPeaks);
-        
-        
-        
-        %set pltCount to new value
-        pltCount = pltCount2;
-        
+        P2 = houghpeaks(H2, maxPeaks);       
         
         
         % combine horizontal and vertical lines
@@ -127,8 +62,8 @@ function transformed = Transform(im, ballotFilenameIn)
         end
         
         % Get Lines from Hough Transformation
-		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 200, 'MinLength', 1000);
-		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 200, 'MinLength', 1000);
+		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 50, 'MinLength', 100);
+		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 50, 'MinLength', 100);
         
         lines = [lines, lines2];
 
@@ -153,7 +88,7 @@ function transformed = Transform(im, ballotFilenameIn)
         end
         
         
-        [intersections, pltCount] = removeIsolated(intersections, pltCount);
+        [intersections, pltCount] = removeIsolated(intersections, maskedImage, pltCount);
         
 
         % find the convex hull from all the intersection points
@@ -390,41 +325,16 @@ function componentMask = reduceComponents(gradMask, strength)
         componentMask = gradMask;
 end
 
-function [newImage, pltCount] = cDarkendBackground(image, pltCount)
-    global showPlot;
-    global savePlot;
-    global pltM;
-    global pltN;
-    
-    grayImg = rgb2gray(image);
-    grayImg = im2double(grayImg);
-    
-    % equalize/normalize the image to get a better distribution
-    normalized = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
-    
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(normalized); title("Histogram Equalization");
-    end
-    
-    newImage = normalized;
-end
-
-
-
-function [maskedImage, numComponents, pltCount] = maskImage2(img, pltCount, gaussStrength, medianStrength, componentReducingStrength, dilationStrength)
+function [maskedImage, pltCount] = maskImage(img, pltCount)
         global showPlot;
         global savePlot;
         global pltM;
         global pltN;
         
 		% Blur the image for denoising
-		H = fspecial('gaussian', [20, 20], 20);
+		H = fspecial('gaussian', [5, 5], 10);
 		blurredImg = imfilter(img, H, 'replicate');
-        if(medianStrength > 0)
-            blurredImg = medfilt2(blurredImg, [medianStrength, medianStrength]);
-        end
-        blurredImg = medfilt2(blurredImg, [30, 30]);
+        blurredImg = medfilt2(blurredImg, [10, 10]);
         
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
@@ -442,22 +352,24 @@ function [maskedImage, numComponents, pltCount] = maskImage2(img, pltCount, gaus
         end
         
 		% Find all the connected compoments & remove small ones
-        componentMask = reduceComponents(gradMask, 2);
+        componentMask = reduceComponents(gradMask, 1);
         
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
             imshow(componentMask); title('Component Reduction');
         end
 
-        
-% 		% Find edge mask
-%         edgeMask = edge(gradMask, 'canny');
-        
-		DilationMask = imfilter(componentMask, H, 'replicate');
-        se = strel('line',100,100);
-        se2 = strel('line',100,100);
+        DilationMask = componentMask;
+		% DilationMask = imfilter(DilationMask, H, 'replicate');
+        DilationMask = medfilt2(DilationMask, [5, 5]);
+%         se = strel('line',50,0);
+%         DilationMask1 = imdilate(DilationMask, se);
+%         se = strel('line',50,90);
+%         DilationMask2 = imdilate(DilationMask, se);
+        se = strel('octagon',18);
         DilationMask = imdilate(DilationMask, se);
-        %DilationMask = imerode(DilationMask, se2);
+        se = strel('octagon',12);
+        DilationMask = imerode(DilationMask, se);
         
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
@@ -465,64 +377,6 @@ function [maskedImage, numComponents, pltCount] = maskImage2(img, pltCount, gaus
         end
         
         maskedImage = DilationMask;
-		cc = bwconncomp(maskedImage, 4);
-        numComponents = cc.NumObjects;
-end
-
-function [maskedImage, numComponents, pltCount] = maskImage(img, pltCount, gaussStrength, medianStrength, componentReducingStrength, dilationStrength)
-        global showPlot;
-        global savePlot;
-        global pltM;
-        global pltN;
-        
-		% Blur the image for denoising
-		H = fspecial('gaussian', [gaussStrength, gaussStrength], gaussStrength);
-		blurredImg = imfilter(img, H, 'replicate');
-        if(medianStrength > 0)
-            blurredImg = medfilt2(blurredImg, [medianStrength, medianStrength]);
-        end
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(blurredImg); title('Denoising Filters');
-        end
-
-		% Create a gradient magnitude mask
-		gradThreshold = mean(blurredImg(:)) - std(blurredImg(:));
-		[gradMag, ~] = imgradient(blurredImg);
-		gradMask = (gradMag > gradThreshold);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(gradMask); title('Grad Mask');
-        end
-        
-		% Find all the connected compoments & remove small ones
-        componentMask = reduceComponents(gradMask, componentReducingStrength);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(componentMask); title('Component Reduction');
-        end
-
-        
-% 		% Find edge mask
-%         edgeMask = edge(gradMask, 'canny');
-        
-		DilationMask = imfilter(componentMask, H, 'replicate');
-        se = strel('line',dilationStrength,dilationStrength*4);
-        DilationMask = imdilate(componentMask, se);
-        se = strel('line',dilationStrength*4,dilationStrength);
-        DilationMask = imdilate(DilationMask, se);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(DilationMask); title('DilationEdge Mask');
-        end
-        
-        maskedImage = DilationMask;
-		cc = bwconncomp(maskedImage, 4);
-        numComponents = cc.NumObjects;
 end
 
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
@@ -536,11 +390,17 @@ function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision
 end
 
 
-function [newPoints, pltCount] = removeIsolated(points, pltCount)
+function [newPoints, pltCount] = removeIsolated(points, mask, pltCount)
     global showPlot;
     global savePlot;
     global pltN;
     global pltM;
+    
+    se = strel('line',50,0);
+    DilationMask1 = imdilate(mask, se);
+    se = strel('line',50,90);
+    DilationMask2 = imdilate(mask, se);
+    mask = DilationMask1 | DilationMask2;
 
     minX = min(points(:,1));
     minY = min(points(:,2));
@@ -548,55 +408,77 @@ function [newPoints, pltCount] = removeIsolated(points, pltCount)
     maxY = max(points(:,2));
     
     % mid = [mean(points(:,1)), mean(points(:,2))];
-    mid = [(maxX-minX)/2, (maxY-minY)/2];
-    corners = [minX maxY; maxX maxY; maxX minY; minX minY];
+    % mid = [(maxX-minX)/2, (maxY-minY)/2];
     
     if(showPlot || savePlot)
         subplot(pltM, pltN, pltCount);
-        cla();
         hold on;
-        plot(points(:,1), points(:,2),'*', 'Color', 'blue'); title("Removing isolated Points");
-        plot(mid(1), mid(2),'*', 'Color','red');
+        cla();
+        plot(points(:,1), points(:,2),'.', 'Color', 'blue'); title("Removing isolated Points");
+        set(gca, 'YDir','reverse');
         hold off;
     end
     
-    distance = vecnorm((points - mid)')';
-    sd = std(distance);
-    m = mean(distance);
+    maskedPoints = round(points);
+    maskedPoints(maskedPoints <= 1) = 1;
+    maskedPoints(maskedPoints(:,1)>=size(mask,2)-1,1) = size(mask,2);
+    maskedPoints(maskedPoints(:,2)>=size(mask,1)-1,2) = size(mask,1);
+    ptsMask = mask;
+    ptsMask(:,:) = 0;
+    linearIndices = sub2ind(size(mask), maskedPoints(:,2), maskedPoints(:,1));
+    ptsMask(linearIndices) = mask(linearIndices);
+    [r, c] = find(ptsMask > 0.9);
+    maskedPoints = [c, r];
+    newPoints = maskedPoints;
     
-    newPoints = points(distance < m+1*sd,:);
+    if(showPlot || savePlot)
+        subplot(pltM, pltN, pltCount);
+        hold on;
+        plot(maskedPoints(:,1), maskedPoints(:,2),'*', 'Color', 'green');
+        hold off;
+    end
     
-    best = newPoints;
-    last = newPoints;
+%     mid = [mean(newPoints(:,1)), mean(newPoints(:,2))];
+%     distance = vecnorm((newPoints - mid)')';
+%     sd = std(distance);
+%     m = mean(distance);
+%     closePoints = newPoints(distance < m+3*sd,:);
+%     newPoints = closePoints;
+%     
+    k = convhull(newPoints);
+    hull = newPoints(k,:);
     
-    k = convhull(last);
-    hull = last(k,:);
-    lastArea = polyarea(hull(:,1),hull(:,2));
-    bestArea = inf;
-    initialArea = lastArea;
-    
-    relation = 0;
-    while(relation < 0.95 && lastArea/initialArea > 0.7)
-        if(showPlot || savePlot)
-            subplot(pltM, pltN, pltCount);
-            hold on;
-            plot(hull(:,1), hull(:,2),'Color', 'red');
-            hold off;
-        end
-        best = last;
-        bestArea = lastArea;
-        
-        last(k,:) = [];
-        k = convhull(last);
-        hull = last(k,:);
-        lastArea = polyarea(hull(:,1),hull(:,2));
-        relation = lastArea/bestArea;
+    if(showPlot || savePlot)
+        subplot(pltM, pltN, pltCount);
+        hold on;
+        plot(hull(:,1), hull(:,2),'LineWidth',1,'Color', 'red','LineStyle','-');
+        hold off;
     end
     
     if(showPlot || savePlot)
          pltCount = pltCount + 1;
     end
     
-    newPoints = best;
+    newPoints = newPoints;
+end
+
+function [normalizedImage, pltCount] = normalize(image, pltCount)
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    
+    grayImg = rgb2gray(image);
+    grayImg = im2double(grayImg);
+    
+    % equalize/normalize the image to get a better distribution
+    normalizedImage = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
+    
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(normalizedImage); title("Histogram Equalization");
+    end
+        
+    normalizedImage = normalizedImage;
 end
 
