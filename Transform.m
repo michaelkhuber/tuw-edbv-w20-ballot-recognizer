@@ -1,8 +1,20 @@
-function transformed = Transform(im, ballotFilename)
+% AUTHORS
+% Jakob @ TUWIEN
+% Binder Richard @ TUWIEN
+function transformed = Transform(im, ballotFilenameIn)
         global showPlot;
         global savePlot;
-        showPlot = false;
+        global ballotFilename;
+        global f;
+        global pltM;
+        global pltN;
+        
+        showPlot = true;
         savePlot = true;
+        ballotFilename = ballotFilenameIn;
+        pltM = 3;
+        pltN = 4;
+        pltCount = 1;
         
         %resize image to have 2000 pixels in height without deforming
         newSize = [2000,size(im,2)/size(im,1) * 2000];
@@ -16,59 +28,42 @@ function transformed = Transform(im, ballotFilename)
         end
         
         if(showPlot || savePlot)
-            subplot(3, 3, 1);
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
             imshow(im); title('Original');
         end
         
-        imGray = rgb2gray(im);
-		imGray = im2double(imGray);
+        [normalizedImage, pltCount] = normalize(im, pltCount);
+		[imH, imW] = size(normalizedImage);
         
-        normalized = adapthisteq(imGray,'clipLimit',0.02,'Distribution','rayleigh');
-		[imH, imW] = size(normalized);
-
-        minComponents = 30;
-        maxComponents = 50;
-        [maskedImage, numComponents] = maskImage(normalized, 5, 0, 1);
+        minPeaks = 10;
+        maxPeaks = 40;
         
-        if(numComponents < minComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 0, -1);
-        end
-        
-        if(numComponents > maxComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 1, 2);
-        end
-        
-        if(numComponents > maxComponents)
-            [maskedImage, numComponents] = maskImage(normalized, 5, 10, 3);
-        end
-        
-        maxPeaks = 30;
-        [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 15);
+        [maskedImage, pltCount] = maskImage(normalizedImage, pltCount);
+        [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 5);
         P = houghpeaks(H, maxPeaks);
-        P2 = houghpeaks(H2, maxPeaks);
+        P2 = houghpeaks(H2, maxPeaks);       
+        
+        
+        % combine horizontal and vertical lines
+        HCombined = [H2,H];
+        thetaCombined = [theta2, theta];
+        rhoCombined = [rho2, rho];
+        PCombined = [P2;[P(:,1),P(:,2)+size(H2,2)]];
         
         if(showPlot || savePlot)
-            subplot(3, 3, 6);
-            imshow(imadjust(rescale(H)),'XData',theta,'YData',rho,...
-          'InitialMagnification','fit'); %plot Hough transformation For Vertical Lines
-             title('Hough transform For Vertical Lines');
+            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+            imshow(imadjust(rescale(HCombined)),'XData',thetaCombined,'YData',rhoCombined,...
+          'InitialMagnification','fit'); %plot Hough transformation
+             title('Hough Transform');
              xlabel('\theta'), ylabel('\rho');
              axis on, axis normal, hold on;
-            plot(theta(P(:,2)),rho(P(:,1)),'s','color','white'); %plot peaks
+            plot(thetaCombined(PCombined(:,2)),rhoCombined(PCombined(:,1)),'s','color','white'); %plot peaks
             colormap(gca,hot);
         end
         
         % Get Lines from Hough Transformation
-		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 100, 'MinLength', 100);
-		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 100, 'MinLength', 100);
-        
-        if(showPlot || savePlot) 
-            subplot(3, 3, 7);
-            imshow(imGray); title('Lines & Corners');
-            hold on;
-            plotLines(lines);
-            plotLines(lines2);
-        end
+		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 50, 'MinLength', 100);
+		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 50, 'MinLength', 100);
         
         lines = [lines, lines2];
 
@@ -91,17 +86,16 @@ function transformed = Transform(im, ballotFilename)
 			intersections = [intersections; x, y];
 		  end
         end
+        
+        
+        [intersections, pltCount] = removeIsolated(intersections, maskedImage, pltCount);
+        
 
         % find the convex hull from all the intersection points
 		k = convhull(intersections);
         hull = [];
         hull(:,:) = intersections(k,:);
         
-        if(showPlot || savePlot) 
-            plot(intersections(:,1),intersections(:,2),'*', 'Color', 'blue');
-            hold on;
-            plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
-        end
         
         %Reduce the points inside the hull set until there is only 4 points
         %this should be the corner points of our rectangle hull
@@ -139,6 +133,12 @@ function transformed = Transform(im, ballotFilename)
         % image borders is as small as possible
         % the intention is to order the corners as top left, top right,
         % bottom right, bottom left
+        % currently, this just calculates the points in the middle of the
+        % lines between the corners, and then calculates the sum of the
+        % distances to the image border middle points
+        % this seemed to be more stable than simply calculating the
+        % distances between corners and image corners
+        % might be improvable, but works well in ~95% of cases
         minDist = inf;
         corners = [];
         tmpCorners = simplifiedHull;
@@ -158,21 +158,28 @@ function transformed = Transform(im, ballotFilename)
                 a=0;
             end
         end
-            
-        for j = 1:4
-            middlePoints(j,:) = corners(j,:) + (corners(mod(j,4)+1,:) - corners(j,:))/2;
-        end
         
-       if(showPlot || savePlot) 
+                
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
             hold on;
+            imshow(im); title('Lines & Corners');
+            plotLines(lines);
+            plotLines(lines2);
+            
+            plot(intersections(:,1),intersections(:,2),'*', 'Color', 'blue');
+            plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
+            
             for j = 1:4
                 plot(corners(j,1),corners(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
                 text(corners(j,1),corners(j,2), num2str(j),'Color', 'blue','FontSize',20);
+%                 middlePoints(j,:) = corners(j,:) + (corners(mod(j,4)+1,:) - corners(j,:))/2;
 %                 plot(middleCornerPoints(j,1),middleCornerPoints(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
 %                 text(middleCornerPoints(j,1),middleCornerPoints(j,2), num2str(j),'Color', 'red','FontSize',30);
 %                 plot(middleImagePoints(j,1),middleImagePoints(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
 %                 text(middleImagePoints(j,1),middleImagePoints(j,2), num2str(j),'Color', 'red','FontSize',30);
             end
+            hold off;
        end
 
 		% Measure the skewed widths & heights
@@ -204,11 +211,11 @@ function transformed = Transform(im, ballotFilename)
         
         if(showPlot || savePlot) 
             % Plot the results
-            subplot(3, 3, 8);
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
             imshow(imNew); title('Transformed');
         end
         
-        %Crop the image to to the 4 corners of ballot
+        %Crop the image to to the 4 corners of the ballot
         upper_left  = corners([1,2],1)';
         lower_right = corners([1,2],3)';
         
@@ -226,7 +233,7 @@ function transformed = Transform(im, ballotFilename)
 
         if(showPlot || savePlot) 
             % Plot the results
-            subplot(3, 3, 9);
+            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
             imshow(imNew); title('Cropped');
         end
         
@@ -247,6 +254,7 @@ function plotLines(lines)
 end
 
 function H2to1 = ComputeHNorm(p1, p2)
+        % compute the homography norm
 		[row,col] = size(p2); 
 		L = [0]; z13 = [0,0,0];
 		p2 = [p2;ones(1,col)];
@@ -297,7 +305,7 @@ end
 
 %reduce components of input mask
 % numComponents is the number of remaining components
-function [componentMask, numComponents] = reduceComponents(gradMask, strength)
+function componentMask = reduceComponents(gradMask, strength)
 		cc = bwconncomp(gradMask, 4);
         
         ccSizes = zeros(cc.NumObjects,1);
@@ -315,53 +323,60 @@ function [componentMask, numComponents] = reduceComponents(gradMask, strength)
 		  end
         end
         componentMask = gradMask;
-		cc = bwconncomp(gradMask, 4);
-        numComponents = cc.NumObjects;
 end
 
-function [maskedImage, numComponents] = maskImage(img, gaussStrength, medianStrength, componentReducingStrength)
+function [maskedImage, pltCount] = maskImage(img, pltCount)
         global showPlot;
         global savePlot;
+        global pltM;
+        global pltN;
         
 		% Blur the image for denoising
-		H = fspecial('gaussian', [gaussStrength, gaussStrength], gaussStrength);
+		H = fspecial('gaussian', [5, 5], 10);
 		blurredImg = imfilter(img, H, 'replicate');
-        if(medianStrength > 0)
-            blurredImg = medfilt2(blurredImg, [medianStrength, medianStrength]);
-        end
+        blurredImg = medfilt2(blurredImg, [10, 10]);
         
         if(showPlot || savePlot) 
-            subplot(3, 3, 2);
-            imshow(blurredImg); title('Histogram Equalization');
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(blurredImg); title('Denoising Filters');
         end
 
 		% Create a gradient magnitude mask
-		gradThreshold = mean(blurredImg(:)) - 2*std(blurredImg(:));
 		[gradMag, ~] = imgradient(blurredImg);
+		gradThreshold = mean(gradMag(:)) + std(gradMag(:));
 		gradMask = (gradMag > gradThreshold);
         
         if(showPlot || savePlot) 
-            subplot(3, 3, 3);
+            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
             imshow(gradMask); title('Grad Mask');
         end
         
 		% Find all the connected compoments & remove small ones
-        [componentMask, numComponents] = reduceComponents(gradMask, componentReducingStrength);
+        componentMask = reduceComponents(gradMask, 1);
         
         if(showPlot || savePlot) 
-            subplot(3, 3, 4);
+            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
             imshow(componentMask); title('Component Reduction');
         end
 
-		% Find edge mask
-        edgeMask = edge(componentMask, 'canny');
+        DilationMask = componentMask;
+		% DilationMask = imfilter(DilationMask, H, 'replicate');
+        DilationMask = medfilt2(DilationMask, [5, 5]);
+%         se = strel('line',50,0);
+%         DilationMask1 = imdilate(DilationMask, se);
+%         se = strel('line',50,90);
+%         DilationMask2 = imdilate(DilationMask, se);
+        se = strel('octagon',18);
+        DilationMask = imdilate(DilationMask, se);
+        se = strel('octagon',12);
+        DilationMask = imerode(DilationMask, se);
         
         if(showPlot || savePlot) 
-            subplot(3, 3, 5);
-            imshow(edgeMask); title('Edge Mask');
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(DilationMask); title('Dilation Mask');
         end
         
-        maskedImage = componentMask;
+        maskedImage = DilationMask;
 end
 
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
@@ -373,3 +388,97 @@ function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision
 		% to 0°
 		[H2, theta2, rho2] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [-90.0:0.5:0.0]);
 end
+
+
+function [newPoints, pltCount] = removeIsolated(points, mask, pltCount)
+    global showPlot;
+    global savePlot;
+    global pltN;
+    global pltM;
+    
+    se = strel('line',50,0);
+    DilationMask1 = imdilate(mask, se);
+    se = strel('line',50,90);
+    DilationMask2 = imdilate(mask, se);
+    mask = DilationMask1 | DilationMask2;
+
+    minX = min(points(:,1));
+    minY = min(points(:,2));
+    maxX = max(points(:,1));
+    maxY = max(points(:,2));
+    
+    % mid = [mean(points(:,1)), mean(points(:,2))];
+    % mid = [(maxX-minX)/2, (maxY-minY)/2];
+    
+    if(showPlot || savePlot)
+        subplot(pltM, pltN, pltCount);
+        hold on;
+        cla();
+        plot(points(:,1), points(:,2),'.', 'Color', 'blue'); title("Removing isolated Points");
+        set(gca, 'YDir','reverse');
+        hold off;
+    end
+    
+    maskedPoints = round(points);
+    maskedPoints(maskedPoints <= 1) = 1;
+    maskedPoints(maskedPoints(:,1)>=size(mask,2)-1,1) = size(mask,2);
+    maskedPoints(maskedPoints(:,2)>=size(mask,1)-1,2) = size(mask,1);
+    ptsMask = mask;
+    ptsMask(:,:) = 0;
+    linearIndices = sub2ind(size(mask), maskedPoints(:,2), maskedPoints(:,1));
+    ptsMask(linearIndices) = mask(linearIndices);
+    [r, c] = find(ptsMask > 0.9);
+    maskedPoints = [c, r];
+    newPoints = maskedPoints;
+    
+    if(showPlot || savePlot)
+        subplot(pltM, pltN, pltCount);
+        hold on;
+        plot(maskedPoints(:,1), maskedPoints(:,2),'*', 'Color', 'green');
+        hold off;
+    end
+    
+%     mid = [mean(newPoints(:,1)), mean(newPoints(:,2))];
+%     distance = vecnorm((newPoints - mid)')';
+%     sd = std(distance);
+%     m = mean(distance);
+%     closePoints = newPoints(distance < m+3*sd,:);
+%     newPoints = closePoints;
+%     
+    k = convhull(newPoints);
+    hull = newPoints(k,:);
+    
+    if(showPlot || savePlot)
+        subplot(pltM, pltN, pltCount);
+        hold on;
+        plot(hull(:,1), hull(:,2),'LineWidth',1,'Color', 'red','LineStyle','-');
+        hold off;
+    end
+    
+    if(showPlot || savePlot)
+         pltCount = pltCount + 1;
+    end
+    
+    newPoints = newPoints;
+end
+
+function [normalizedImage, pltCount] = normalize(image, pltCount)
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    
+    grayImg = rgb2gray(image);
+    grayImg = im2double(grayImg);
+    
+    % equalize/normalize the image to get a better distribution
+    normalizedImage = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
+    
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(normalizedImage); title("Histogram Equalization");
+    end
+        
+    normalizedImage = normalizedImage;
+end
+
