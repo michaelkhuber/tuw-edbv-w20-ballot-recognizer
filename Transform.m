@@ -228,8 +228,10 @@ function transformed = Transform(im, ballotFilenameIn)
         
         imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);
         
-        %resize image to have 2000 pixels in height without deforming
-        newSize = [2000,size(imNew,2)/size(imNew,1) * 2000];
+        %resize ballot to have its original template size dimensions of 2500x3500
+        %alternative: keep dimensions of input image
+        %newSize = [2000,size(imNew,2)/size(imNew,1) * 2000];
+        newSize = [2500,3500];
         imNew = imresize(imNew,newSize);
 
         if(showPlot || savePlot) 
@@ -477,7 +479,7 @@ function [normalizedImage, pltCount] = normalize(image, pltCount)
     
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(image); title("Chroma");
+            imshow(image); title("Chromaticity");
         end
     
         white = sqrt(3*double(255)^2);

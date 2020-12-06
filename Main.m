@@ -17,7 +17,7 @@ function ballotTable = Main()
     % - Manually choose Filenames (meant for debugging)
     % ballotFilenames = ["resources/ballots/14A.jpg", "14A.jpg"];
     %ballotFilenames = ballotFilenames(17:size(ballotFilenames,1),:);
-    ballotFilenames = ballotFilenames(17:25,:);
+    ballotFilenames = ballotFilenames(25:25,:);
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate validity array
@@ -67,7 +67,7 @@ function [validity, choice, error] = Pipeline(templateChoices, ballotFilename)
         %  - Normalize and transform the image
         transformedBallot = Transform(ballotImg, ballotFilename(2));
         
-        bla = hh; %TODO: DELETE THIS LINE
+        %bla = hh; %TODO: DELETE THIS LINE
         
         %% - STEP 3
         %  - Match circles in ballot
