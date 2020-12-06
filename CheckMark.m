@@ -1,4 +1,8 @@
 function markedCircleIndices = CheckMark(ballotCircles)
+    global showPlot;
+    global savePlot;
+    showPlot = false;
+    savePlot = false;
     markedCircleIndices = [];
    
     for k=1:length(ballotCircles)
@@ -17,7 +21,9 @@ function markedCircleIndices = CheckMark(ballotCircles)
 
         x = theta(P(:,2));
         y = rho(P(:,1));
-        plot(x,y,'s','color','black');
+        if(showPlot || savePlot)
+            plot(x,y,'s','color','black');
+        end
         
         % lines have to have particular length
         lines = houghlines(circle,theta,rho,P,'FillGap',8.0,'MinLength',45);

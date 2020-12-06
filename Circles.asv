@@ -1,8 +1,9 @@
 function ballotCircles = Circles(ballot, ballotFilename)
     global showPlot;
     global savePlot;
-    showPlot = true;
+    showPlot = false;
     savePlot = true;
+    pltCount = 0;
     
     %get greyscale image
     ballot = im2gray(ballot);
@@ -11,7 +12,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
     ballot=ballot(300:2400,1:500); 
     
     %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
-    [centers, radii, metric] = imfindcircles(ballot,[20 60],'ObjectPolarity','bright','Sensitivity',0.90);
+    [centers, radii, metric] = imfindcircles(ballot,[20 60],'ObjectPolarity','bright','Sensitivity',0.95);
     
     if(showPlot)
         f = figure(2);
@@ -32,13 +33,13 @@ function ballotCircles = Circles(ballot, ballotFilename)
     else
    
         %find biggest circle and find circles within 0.9 % deviation
-        rmax = max(radii);
-        i = radii > rmax * 0.8;
-        centers = centers(i, :);
-        radii = radii(i);
+%         rmax = max(radii);
+%         i = radii > rmax * 0.8;
+%         centers = centers(i, :);
+%         radii = radii(i);
 
-%         centers = centers(1:10,:);
-%         radii = radii(1:10,:);
+        centers = centers(1:10,:);
+        radii = radii(1:10,:);
         
         if(showPlot || savePlot) 
             viscircles(centers, radii,'EdgeColor','r');
@@ -56,11 +57,6 @@ function ballotCircles = Circles(ballot, ballotFilename)
             x1 = round(u(j) + radii(j)); 
             y0 = round(v(j) - radii(j));
             y1 = round(v(j) + radii(j));
-            
-            if(x0 > size(ballot, 2)), x0  = size(ballot, 2); end
-            if(x1 > size(ballot, 2)), x1  = size(ballot, 2); end
-            if(y0 > size(ballot, 1)), y0  = size(ballot, 2); end
-            if(y1 > size(ballot, 1)), y1  = size(ballot, 2); end
 
             %create boundingboxes of circles 
             rectangle('Position', [x0 y0 radii(j)*2 radii(j)*2]);
