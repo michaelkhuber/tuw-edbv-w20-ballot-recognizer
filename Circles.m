@@ -6,7 +6,10 @@ function ballotCircles = Circles(ballot, ballotFilename)
     
     %get greyscale image
     ballot = im2gray(ballot);
-
+    
+    %crop image so that only left circles are left 
+    ballot=ballot(300:2400,1:500); 
+    
     %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
     [centers, radii, metric] = imfindcircles(ballot,[40, 80]);
     
@@ -26,6 +29,13 @@ function ballotCircles = Circles(ballot, ballotFilename)
     if(isempty(centers))
         ballotCircles = [];
     else
+   
+        %find biggest circle and find circles within 0.9 % deviation
+        rmax = max(radii);
+        i = radii > rmax * 0.9;
+        centers = centers(i, :);
+        radii = radii(i);
+        
         %sort circles by y coordinate  
         centersSorted = sortrows(centers,2); 
         u = centersSorted(:,1);
