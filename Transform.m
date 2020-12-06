@@ -13,12 +13,14 @@ function transformed = Transform(im, ballotFilenameIn)
         savePlot = true;
         ballotFilename = ballotFilenameIn;
         pltM = 3;
-        pltN = 4;
+        pltN = 5;
         pltCount = 1;
         
         %resize image to have 2000 pixels in height without deforming
         newSize = [2000,size(im,2)/size(im,1) * 2000];
         im = imresize(im,newSize);
+		imH = size(im, 1);
+		imW = size(im, 2);
             
         if(showPlot)
             f = figure(1);
@@ -33,7 +35,6 @@ function transformed = Transform(im, ballotFilenameIn)
         end
         
         [normalizedImage, pltCount] = normalize(im, pltCount);
-		[imH, imW] = size(normalizedImage);
         
         minPeaks = 10;
         maxPeaks = 40;
@@ -62,8 +63,8 @@ function transformed = Transform(im, ballotFilenameIn)
         end
         
         % Get Lines from Hough Transformation
-		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 50, 'MinLength', 100);
-		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 50, 'MinLength', 100);
+		lines = houghlines(maskedImage, theta, rho,P, 'FillGap', 500, 'MinLength', 500);
+		lines2 = houghlines(maskedImage, theta2, rho2,P2, 'FillGap', 500, 'MinLength', 500);
         
         lines = [lines, lines2];
 
@@ -80,7 +81,7 @@ function transformed = Transform(im, ballotFilenameIn)
 
 			x = (p1*sind(t2)-p2*sind(t1))/(cosd(t1)*sind(t2)-sind(t1)*cosd(t2));
 			y = (p1*cosd(t2)-p2*cosd(t1))/(sind(t1)*cosd(t2)-cosd(t1)*sind(t2));
-			if (isnan(x) || isnan(y) || x <= 0 || x > imW || y <= 0 || y > imH)
+			if (isnan(x) || isnan(y) || x < 1 || x > imW || y < 1 || y > imH)
                 continue;
             end
 			intersections = [intersections; x, y];
@@ -330,20 +331,11 @@ function [maskedImage, pltCount] = maskImage(img, pltCount)
         global savePlot;
         global pltM;
         global pltN;
-        
-		% Blur the image for denoising
-		H = fspecial('gaussian', [5, 5], 10);
-		blurredImg = imfilter(img, H, 'replicate');
-        blurredImg = medfilt2(blurredImg, [10, 10]);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(blurredImg); title('Denoising Filters');
-        end
+       
 
 		% Create a gradient magnitude mask
-		[gradMag, ~] = imgradient(blurredImg);
-		gradThreshold = mean(gradMag(:)) + std(gradMag(:));
+		[gradMag, ~] = imgradient(img);
+		gradThreshold = mean(gradMag(:)) + 1 * std(gradMag(:));
 		gradMask = (gradMag > gradThreshold);
         
         if(showPlot || savePlot) 
@@ -360,15 +352,9 @@ function [maskedImage, pltCount] = maskImage(img, pltCount)
         end
 
         DilationMask = componentMask;
-		% DilationMask = imfilter(DilationMask, H, 'replicate');
-        DilationMask = medfilt2(DilationMask, [5, 5]);
-%         se = strel('line',50,0);
-%         DilationMask1 = imdilate(DilationMask, se);
-%         se = strel('line',50,90);
-%         DilationMask2 = imdilate(DilationMask, se);
         se = strel('octagon',18);
         DilationMask = imdilate(DilationMask, se);
-        se = strel('octagon',12);
+        se = strel('octagon',6);
         DilationMask = imerode(DilationMask, se);
         
         if(showPlot || savePlot) 
@@ -377,6 +363,7 @@ function [maskedImage, pltCount] = maskImage(img, pltCount)
         end
         
         maskedImage = DilationMask;
+        
 end
 
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
@@ -419,15 +406,24 @@ function [newPoints, pltCount] = removeIsolated(points, mask, pltCount)
         hold off;
     end
     
+    % make sure that the points dont clip outside the borders
     maskedPoints = round(points);
     maskedPoints(maskedPoints <= 1) = 1;
     maskedPoints(maskedPoints(:,1)>=size(mask,2)-1,1) = size(mask,2);
     maskedPoints(maskedPoints(:,2)>=size(mask,1)-1,2) = size(mask,1);
+    
+    % define black image
     ptsMask = mask;
     ptsMask(:,:) = 0;
+    % get linear indices for all the points
     linearIndices = sub2ind(size(mask), maskedPoints(:,2), maskedPoints(:,1));
+    % set all pixels at the linearIndices the same as the mask
     ptsMask(linearIndices) = mask(linearIndices);
+    %get rows and columns of all pixels that are white ( greater than 0.9
+    %is just cause double comparison doesnt work )
     [r, c] = find(ptsMask > 0.9);
+    %now we have all points that originally were at a white pixel on the
+    %mask
     maskedPoints = [c, r];
     newPoints = maskedPoints;
     
@@ -468,17 +464,203 @@ function [normalizedImage, pltCount] = normalize(image, pltCount)
     global pltM;
     global pltN;
     
-    grayImg = rgb2gray(image);
-    grayImg = im2double(grayImg);
+    %[image, success, pltCount] = removeBackground(image, pltCount);
+    success = false;
     
-    % equalize/normalize the image to get a better distribution
-    normalizedImage = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
+    if ( success )
+        white = sqrt(3*double(255)^2);
+        grayImg = sqrt(double(image(:,:,1)).^2 + double(image(:,:,2)).^2 + double(image(:,:,3)).^2) ./ white;
+        
+        blurredImg = imgaussfilt(grayImg, 50);
+    else
+        image = getChroma(image);
+    
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(image); title("Chroma");
+        end
+    
+        white = sqrt(3*double(255)^2);
+        grayImg = sqrt(double(image(:,:,1)).^2 + double(image(:,:,2)).^2 + double(image(:,:,3)).^2) ./ white;
+
+        % equalize/normalize the image to get a better distribution
+        image = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
+    
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(image); title("Histogram Equalization");
+        end
+    
+        blurredImg = imgaussfilt(image, 20);
+    end
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(blurredImg); title('Denoising Filters');
+    end
+        
+    normalizedImage = blurredImg;
+end
+
+function [thresholdImage, success, pltCount] = removeBackground(image, pltCount)
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    
+    thresholdImage = image;
+    
+    channelid = 0;
+    maxSd = -inf;
+    for i = 1:3
+        channel = image(:,:,i);
+        sd = std(double(channel(:)));
+        if (sd > maxSd)
+            maxSd = sd;
+            channelid = i;
+        end
+    end
+    
+    mask = image(:,:,channelid);
+    %mask = adapthisteq(mask,'clipLimit',0.02,'Distribution','rayleigh');
+    %whiteDist = imsharpen(whiteDist,'Radius',5,'Amount',1);
     
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(normalizedImage); title("Histogram Equalization");
+        imshow(mask);
+        title("Sharpening");
     end
+    
+    %dist = sqrt(double(r).^2 + double(g).^2 + double(b).^2);
+    
+    [counts, edges] = histcounts(mask, 50);
+    [locMin, locMax] = getLocals(counts, max(counts(:)) * 0.8);
+    edges = edges(1:(length(edges)-1));
+    
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        hold on;
+        plot(edges,counts,'Color', 'red');
+        plot(edges(locMax),counts(locMax),'^','Color', 'blue');
+        plot(edges(locMin),counts(locMin),'v','Color', 'blue');
         
-    normalizedImage = normalizedImage;
+        rgbStrings = ["red", "green", "blue"];
+        title(sprintf("%s channel Histogram", rgbStrings(channelid)));
+        hold off;
+    end
+    
+    localMinDist = edges(locMin);
+    binary = mask <= localMinDist;
+    pixelsRemoved = sum(binary(:));
+    
+    for i = 1:3
+        channel = image(:,:,i);
+        channel(binary) = 0.0;
+        thresholdImage(:,:,i) = channel;
+    end
+    
+    % assume that number of removed pixels is an indicator whether the
+    % background removal succeeded or not
+    minRemoved = 0.2 * length(binary(:));
+    maxRemoved = 0.6 * length(binary(:));
+    
+    % if removing background did not make the number of gradients smaller,
+    % then assume that it did more bad than good
+    % disable plotting temporarily
+    showPlot2 = showPlot; showPlot = false;
+    savePlot2 = savePlot; savePlot = false;
+    
+    gradMask = imgaussfilt(im2double(rgb2gray(image)), 20);
+    gradMask = maskImage(gradMask);
+    gradMaskNew = imgaussfilt(im2double(rgb2gray(thresholdImage)), 20);
+    gradMaskNew = maskImage(gradMaskNew);
+    
+    sumGrads = sum(gradMask(:));
+    sumGradsNew = sum(gradMaskNew(:));
+    
+    showPlot = showPlot2;
+    savePlot = savePlot2;
+    
+    if((pixelsRemoved < minRemoved) || (pixelsRemoved > maxRemoved) )
+        success = 0;
+        thresholdImage = image;
+        return;
+    else
+        success = 1;
+    end
+    
+    if(showPlot || savePlot) 
+        hold on;
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(thresholdImage); title("Background Removal");
+    end
 end
 
+%computes a local minimum and local maximum with difference greater than
+%prominence
+function [locMin, locMax] = getLocals(counts, prominence)
+    %get maxima
+    maxima = [];
+    for i = 2:(length(counts)-1)
+        if( (counts(i) > counts(i-1)) && (counts(i) > counts(i+1)) )
+            maxima = [maxima, i];
+        end
+    end
+    
+    %edge cases
+    if( counts(1) > counts(2) )
+        maxima = [1, maxima];
+    end
+    if( counts(length(counts)) > counts(length(counts)-1) )
+        maxima = [maxima, length(counts)];
+    end
+    
+    minima = [];
+    for i = 2:(length(counts)-1)
+        if( (counts(i) < counts(i-1)) && (counts(i) < counts(i+1)) )
+            minima = [minima, i];
+        end
+    end
+    
+    %edge cases
+    if( counts(1) < counts(2) )
+        minima = [1, minima];
+    end
+    if( counts(length(counts)) < counts(length(counts)-1) )
+        minima = [minima, length(counts)];
+    end
+    
+    prominentMinima = [];
+    prominentMaxima = [];
+    for i = 1:length(minima)
+        for j = 1:length(maxima)
+            %check if maximum is right of minimum, and the difference
+            %between maximum and minimum needs to be greater than
+            %prominence
+            diff = counts(maxima(j)) - counts(minima(i));
+            if( maxima(j) > minima(i) &&  diff > prominence )
+                prominentMinima = [prominentMinima, minima(i)];
+                prominentMaxima = [prominentMaxima, maxima(j)];
+            end
+        end
+    end
+    
+    %get right most prominent maximum
+    locMax = max(prominentMaxima);
+    
+    %and its right most assigned prominent minimum
+    locMin = max(prominentMinima(prominentMaxima==locMax));
+end
+
+
+%gets Chromaticity of an (uint8) rgb image
+function chroma = getChroma(image)
+    image = im2double(image);
+    brightness = rgb2gray(image);
+    brightness(brightness < 0.01) = 0.01;
+    r = image(:,:,1) ./ brightness;
+    g = image(:,:,2) ./ brightness;
+    b = image(:,:,3) ./ brightness;
+    chroma = cat(3, r, g, b);
+    chroma = im2uint8(chroma);
+end

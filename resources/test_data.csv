@@ -1,45 +1,55 @@
-filename;validity;choices
-1A.jpg;valid;SPOE
-1B.jpg;valid;SPOE
-1C.jpg;valid;SPOE
-1D.jpg;valid;SPOE
-2A.jpg;invalid;GRUENE BIER
-2B.jpg;invalid;GRUENE BIER
-2C.jpg;invalid;GRUENE BIER
-3A.jpg;valid;BIER
-3B.jpg;valid;BIER
-3C.jpg;valid;BIER
-4A.jpg;invalid;SPOE GRUENE
-4B.jpg;invalid;SPOE GRUENE
-4C.jpg;invalid;SPOE GRUENE
-5A.jpg;valid;OEVP
-5B.jpg;valid;OEVP
-5C.jpg;valid;OEVP
-10A.jpg;invalid;SPOE HC
-10B.jpg;invalid;SPOE HC
-10C.jpg;invalid;SPOE HC
-10D.jpg;invalid;SPOE HC
-11A.jpg;invalid;
-11B.jpg;invalid;
-12A.jpg;invalid;
-13A.jpg;invalid;
-14A.jpg;valid;NEOS
-14B.jpg;valid;NEOS
-15A.jpg;valid;GRUENE
-16A.jpg;invalid;SPOE VOLT
-16B.jpg;invalid;SPOE VOLT
-16C.jpg;invalid;SPOE VOLT
-16D.jpg;invalid;SPOE VOLT
-17A.jpg;valid;HC
-17B.jpg;valid;HC
-18A.jpg;valid;BIER
-18B.jpg;valid;BIER
-18C.jpg;valid;BIER
-18D.jpg;valid;BIER
-19A.jpg;valid;FPOE
-19B.jpg;valid;FPOE
-19C.jpg;valid;FPOE
-20A.jpg;valid;NEOS
-20B.jpg;valid;NEOS
-20C.jpg;valid;NEOS
-20D.jpg;valid;NEOS
+filename,validity,choices
+1A.jpg,valid,SPOE
+1B.jpg,valid,SPOE
+1C.jpg,valid,SPOE
+1D.jpg,valid,SPOE
+2A.jpg,invalid,GRUENE BIER
+2B.jpg,invalid,GRUENE BIER
+2C.jpg,invalid,GRUENE BIER
+3A.jpg,valid,BIER
+3B.jpg,valid,BIER
+3C.jpg,valid,BIER
+4A.jpg,invalid,SPOE GRUENE
+4B.jpg,invalid,SPOE GRUENE
+4C.jpg,invalid,SPOE GRUENE
+5A.jpg,valid,OEVP
+5B.jpg,valid,OEVP
+5C.jpg,valid,OEVP
+6A.jpg,invalid,
+6B.jpg,invalid,
+6C.jpg,invalid,
+7A.jpg,invalid,NEOS HC
+7B.jpg,invalid,NEOS HC
+7C.jpg,invalid,NEOS HC
+8A.jpg,valid,NEOS
+8B.jpg,valid,NEOS
+8C.jpg,valid,NEOS
+10A.jpg,invalid,SPOE HC
+10B.jpg,invalid,SPOE HC
+10C.jpg,invalid,SPOE HC
+10D.jpg,invalid,SPOE HC
+11A.jpg,invalid,
+11B.jpg,invalid,
+12A.jpg,invalid,
+13A.jpg,invalid,
+14A.jpg,valid,NEOS
+14B.jpg,valid,NEOS
+15A.jpg,valid,GRUENE
+16A.jpg,invalid,SPOE VOLT
+16B.jpg,invalid,SPOE VOLT
+16C.jpg,invalid,SPOE VOLT
+16D.jpg,invalid,SPOE VOLT
+17A.jpg,valid,HC
+17B.jpg,valid,HC
+18A.jpg,valid,BIER
+18B.jpg,valid,BIER
+18C.jpg,valid,BIER
+18D.jpg,valid,BIER
+19A.jpg,valid,FPOE
+19B.jpg,valid,FPOE
+19C.jpg,valid,FPOE
+20A.jpg,valid,NEOS
+20B.jpg,valid,NEOS
+20C.jpg,valid,NEOS
+20D.jpg,valid,NEOS
+21A.jpg,invalid,FPOE HC
