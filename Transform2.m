@@ -311,23 +311,29 @@ end
 %reduce components of input mask
 % numComponents is the number of remaining components
 function componentMask = reduceComponents(gradMask, strength)
+        componentMask = gradMask;
 		cc = bwconncomp(gradMask, 4);
         
         ccSizes = zeros(cc.NumObjects,1);
         for i = 1 : cc.NumObjects
-		  currCC = cc.PixelIdxList{i};
-		  ccSizes(i) = size(currCC, 1);
+            currCC = cc.PixelIdxList{i};
+            ccSizes(i) = size(currCC, 1);
         end
         
 		ccSizeThreshold = mean(ccSizes(:)) + strength*std(ccSizes(:));
+        maxComponent = [];
         
-		for i = 1 : cc.NumObjects
-		  currCC = cc.PixelIdxList{i};
-		  if size(currCC, 1) < ccSizeThreshold
-			gradMask(currCC) = 0;
-		  end
+        for i = 1 : cc.NumObjects
+            currCC = cc.PixelIdxList{i};
+            if size(currCC, 1) > size(maxComponent, 1)
+                maxComponent = currCC;
+            end
+            if size(currCC, 1) < ccSizeThreshold
+                componentMask(currCC) = 0;
+            end
         end
-        componentMask = gradMask;
+        
+        componentMask(maxComponent) = 1;
 end
 
 function [maskedImage, pltCount] = maskImage(img, pltCount)
@@ -356,10 +362,10 @@ function [maskedImage, pltCount] = maskImage(img, pltCount)
         end
 
         DilationMask = componentMask;
-        se = strel('octagon',9);
-        DilationMask = imdilate(DilationMask, se);
         se = strel('octagon',3);
-        DilationMask = imerode(DilationMask, se);
+        DilationMask = imdilate(DilationMask, se);
+%         se = strel('octagon',3);
+%         DilationMask = imerode(DilationMask, se);
         
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
