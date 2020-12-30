@@ -15,9 +15,10 @@ function ballotTable = Main()
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames();
     % - Manually choose Filenames (meant for debugging)
-    % ballotFilenames = ["resources/ballots/14A.jpg", "14A.jpg"];
-    %ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
-    ballotFilenames = ballotFilenames(3:3,:);
+   %ballotFilenames = ["resources/ballots/27K.jpg", "27K.jpg"];
+   ballotFilenames = ballotFilenames(55:size(ballotFilenames,1),:);
+   %ballotFilenames = ballotFilenames(49:49,:);
+    % ballotFilenames = ballotFilenames(3:3,:);
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate validity array
@@ -66,6 +67,7 @@ function [validity, choice, error] = Pipeline(templateChoices, ballotFilename)
         %% - STEP 2
         %  - Normalize and transform the image
         transformedBallot = Transform(ballotImg, ballotFilename(2));
+        transformedBallot = Transform2(transformedBallot, ballotFilename(2));
         
         %bla = hh; %TODO: DELETE THIS LINE
         

@@ -26,7 +26,7 @@ function transformed = Transform(im, ballotFilenameIn)
             f = figure(1);
             clf('reset');
         elseif(savePlot)
-            f = figure('visible','off');
+            f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 2000 1000]);
         end
         
         if(showPlot || savePlot)
@@ -37,7 +37,7 @@ function transformed = Transform(im, ballotFilenameIn)
         [normalizedImage, pltCount] = normalize(im, pltCount);
         
         minPeaks = 10;
-        maxPeaks = 40;
+        maxPeaks = 50;
         
         [maskedImage, pltCount] = maskImage(normalizedImage, pltCount);
         [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 5);
@@ -237,11 +237,13 @@ function transformed = Transform(im, ballotFilenameIn)
         if(showPlot || savePlot) 
             % Plot the results
             subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(imNew); title('Cropped');
+            imshow(imNew); title('Resized & Cropped');
         end
         
         if(savePlot)
             print(f,strcat("resources/results/Transform_", ballotFilename),'-dpng','-r700'); 
+            clf(f);
+            clear f;
         end
 
         transformed = imNew;
@@ -337,7 +339,7 @@ function [maskedImage, pltCount] = maskImage(img, pltCount)
 
 		% Create a gradient magnitude mask
 		[gradMag, ~] = imgradient(img);
-		gradThreshold = mean(gradMag(:)) + 1 * std(gradMag(:));
+		gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
 		gradMask = (gradMag > gradThreshold);
         
         if(showPlot || savePlot) 
@@ -371,11 +373,11 @@ end
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
 		% Use Hough transform to find vertical borders: Theta goes from 0°
 		% to 90°
-		[H, theta, rho] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [0.0:0.5:85.5]);
+		[H, theta, rho] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [0.0:0.3:85.5]);
         
 		% Use Hough transform to find horizontal borders: Theta goes from -90°
 		% to 0°
-		[H2, theta2, rho2] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [-90.0:0.5:0.0]);
+		[H2, theta2, rho2] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [-90.0:0.3:0.0]);
 end
 
 
@@ -466,95 +468,101 @@ function [normalizedImage, pltCount] = normalize(image, pltCount)
     global pltM;
     global pltN;
     
-    %[image, success, pltCount] = removeBackground(image, pltCount);
-    success = false;
-    
-    if ( success )
-        white = sqrt(3*double(255)^2);
-        grayImg = sqrt(double(image(:,:,1)).^2 + double(image(:,:,2)).^2 + double(image(:,:,3)).^2) ./ white;
-        
-        blurredImg = imgaussfilt(grayImg, 50);
-    else
-        image = getChroma(image);
-    
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(image); title("Chromaticity");
-        end
-    
-        white = sqrt(3*double(255)^2);
-        grayImg = sqrt(double(image(:,:,1)).^2 + double(image(:,:,2)).^2 + double(image(:,:,3)).^2) ./ white;
-
-        % equalize/normalize the image to get a better distribution
-        image = adapthisteq(grayImg,'clipLimit',0.02,'Distribution','rayleigh');
-    
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(image); title("Histogram Equalization");
-        end
-    
-        blurredImg = imgaussfilt(image, 20);
+    [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.01, false, "Saturation Histogram Analysis");
+    if ( saturationSuccess )        
+        nobg = im2double(nobg);
+        nobg = rgb2gray(nobg);
+        blurredImg = imgaussfilt(nobg, 20);
+        normalizedImage = blurredImg;
+        return;
     end
+        
+    [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.3, true, "Extended Saturation Histogram Analysis");
+    if ( saturationSuccess )
+        nobg = im2double(nobg);
+        nobg = rgb2gray(nobg);    
+        
+        chroma = getChroma(image);
+        white = sqrt(3*double(255)^2);
+        chroma = sqrt(double(chroma(:,:,1)).^2 + double(chroma(:,:,2)).^2 + double(chroma(:,:,3)).^2) ./ white;
+        chroma = adapthisteq(chroma,'clipLimit',0.02,'Distribution','rayleigh');
+        
+        chroma(nobg < 0.1) = chroma(nobg < 0.1) - 3 * std(chroma(:));
+        chroma( chroma < 0.01 ) = 0.0;
+        gray = rgb2gray(im2double(image));
+        %gray = sqrt( chroma .* gray );
+        gray(nobg < 0.1) = gray(nobg < 0.1) - 2 * std(gray(:));
+        blurredImg = imgaussfilt(gray, 100);
+        blurredImg(nobg > 0.1) = gray(nobg > 0.1);
+        blurredImg = imgaussfilt(blurredImg, 10);
+
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(blurredImg); title("Background Based Chromaticity Blurring");
+        end
+        normalizedImage = blurredImg;
+        return;
+    end
+    
+    grayImg = rgb2gray(im2double(image));
+    blurredImg = imgaussfilt(grayImg, 20);
 
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(blurredImg); title('Denoising Filters');
+        imshow(blurredImg); title("Fallback To Denoised Brightness");
     end
-        
+    
     normalizedImage = blurredImg;
 end
 
-function [thresholdImage, success, pltCount] = removeBackground(image, pltCount)
+%Removes Background based on the histogram of the saturation.
+%On a local minima of the saturation histogram, a threshold is applied onto
+%the image.
+function [thresholdImage, success, pltCount] = removeBackground(image, pltCount, maxProminence, minProminence, doZeroApprox, histogramTitle)
     global showPlot;
     global savePlot;
     global pltM;
     global pltN;
     
-    thresholdImage = image;
+    hsv = rgb2hsv(image);    
+    mask = 1.0 - hsv(:,:,2);
     
-    channelid = 0;
-    maxSd = -inf;
-    for i = 1:3
-        channel = image(:,:,i);
-        sd = std(double(channel(:)));
-        if (sd > maxSd)
-            maxSd = sd;
-            channelid = i;
-        end
-    end
-    
-    mask = image(:,:,channelid);
-    %mask = adapthisteq(mask,'clipLimit',0.02,'Distribution','rayleigh');
-    %whiteDist = imsharpen(whiteDist,'Radius',5,'Amount',1);
-    
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(mask);
-        title("Sharpening");
-    end
-    
-    %dist = sqrt(double(r).^2 + double(g).^2 + double(b).^2);
-    
-    [counts, edges] = histcounts(mask, 50);
-    [locMin, locMax] = getLocals(counts, max(counts(:)) * 0.8);
+    [counts, edges] = histcounts(mask, 100);
+    [locMin, locMax] = getLocals(counts, maxProminence, minProminence);
     edges = edges(1:(length(edges)-1));
+    
+    if( isempty(locMin) ) 
+        thresholdImage = image;
+        success = 0;
+        return;
+    end    
+    
+    localMinDist = edges(locMin);
+    
+    if( doZeroApprox )
+        zeroApprox = locMin - 5 * counts(locMin) * (locMax - locMin) / (counts(locMax) - counts(locMin));
+        zeroApprox = round( zeroApprox );
+        if( zeroApprox < 1 )
+            zeroApprox = 1;
+        end
+        localMinDist = edges(round(zeroApprox));
+    end
     
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
         hold on;
-        plot(edges,counts,'Color', 'red');
-        plot(edges(locMax),counts(locMax),'^','Color', 'blue');
-        plot(edges(locMin),counts(locMin),'v','Color', 'blue');
+        plot(1.0-edges,counts,'Color', 'red');
+        plot(1.0-edges(locMax),counts(locMax),'^','Color', 'blue');
+        plot(1.0-edges(locMin),counts(locMin),'v','Color', 'blue');
         
-        rgbStrings = ["red", "green", "blue"];
-        title(sprintf("%s channel Histogram", rgbStrings(channelid)));
+        title(histogramTitle);
         hold off;
     end
     
-    localMinDist = edges(locMin);
     binary = mask <= localMinDist;
     pixelsRemoved = sum(binary(:));
     
+    thresholdImage = image;    
     for i = 1:3
         channel = image(:,:,i);
         channel(binary) = 0.0;
@@ -564,43 +572,24 @@ function [thresholdImage, success, pltCount] = removeBackground(image, pltCount)
     % assume that number of removed pixels is an indicator whether the
     % background removal succeeded or not
     minRemoved = 0.2 * length(binary(:));
-    maxRemoved = 0.6 * length(binary(:));
-    
-    % if removing background did not make the number of gradients smaller,
-    % then assume that it did more bad than good
-    % disable plotting temporarily
-    showPlot2 = showPlot; showPlot = false;
-    savePlot2 = savePlot; savePlot = false;
-    
-    gradMask = imgaussfilt(im2double(rgb2gray(image)), 20);
-    gradMask = maskImage(gradMask);
-    gradMaskNew = imgaussfilt(im2double(rgb2gray(thresholdImage)), 20);
-    gradMaskNew = maskImage(gradMaskNew);
-    
-    sumGrads = sum(gradMask(:));
-    sumGradsNew = sum(gradMaskNew(:));
-    
-    showPlot = showPlot2;
-    savePlot = savePlot2;
+    maxRemoved = 0.8 * length(binary(:));
     
     if((pixelsRemoved < minRemoved) || (pixelsRemoved > maxRemoved) )
         success = 0;
-        thresholdImage = image;
-        return;
     else
         success = 1;
-    end
-    
-    if(showPlot || savePlot) 
-        hold on;
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(thresholdImage); title("Background Removal");
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(thresholdImage); title("Saturation Based Background Removal");
+        end
     end
 end
 
 %computes a local minimum and local maximum with difference greater than
 %prominence
-function [locMin, locMax] = getLocals(counts, prominence)
+function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
+    maxProminence = maxProminence * max(counts(:));
+
     %get maxima
     maxima = [];
     for i = 2:(length(counts)-1)
@@ -632,17 +621,15 @@ function [locMin, locMax] = getLocals(counts, prominence)
         minima = [minima, length(counts)];
     end
     
-    prominentMinima = [];
     prominentMaxima = [];
-    for i = 1:length(minima)
-        for j = 1:length(maxima)
-            %check if maximum is right of minimum, and the difference
-            %between maximum and minimum needs to be greater than
-            %prominence
-            diff = counts(maxima(j)) - counts(minima(i));
-            if( maxima(j) > minima(i) &&  diff > prominence )
-                prominentMinima = [prominentMinima, minima(i)];
-                prominentMaxima = [prominentMaxima, maxima(j)];
+    prominentMinima = [];
+    for i = 1:length(maxima)
+        if( counts(maxima(i)) > maxProminence )
+            for j = 1:length(minima)
+                if( minima(j) < maxima(i) && counts(minima(j)) < minProminence * counts(maxima(i)) )
+                    prominentMaxima = [prominentMaxima, maxima(i)];
+                    prominentMinima = [prominentMinima, minima(j)];
+                end
             end
         end
     end
@@ -654,8 +641,7 @@ function [locMin, locMax] = getLocals(counts, prominence)
     locMin = max(prominentMinima(prominentMaxima==locMax));
 end
 
-
-%gets Chromaticity of an (uint8) rgb image
+%gets Chromaticity of a (double) rgb image
 function chroma = getChroma(image)
     image = im2double(image);
     brightness = rgb2gray(image);

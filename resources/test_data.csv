@@ -1,20 +1,12 @@
 filename,validity,choices
 1A.jpg,valid,SPOE
-1B.jpg,valid,SPOE
-1C.jpg,valid,SPOE
-1D.jpg,valid,SPOE
 2A.jpg,invalid,GRUENE BIER
-2B.jpg,invalid,GRUENE BIER
-2C.jpg,invalid,GRUENE BIER
 3A.jpg,valid,BIER
-3B.jpg,valid,BIER
-3C.jpg,valid,BIER
 4A.jpg,invalid,SPOE GRUENE
 4B.jpg,invalid,SPOE GRUENE
 4C.jpg,invalid,SPOE GRUENE
 5A.jpg,valid,OEVP
 5B.jpg,valid,OEVP
-5C.jpg,valid,OEVP
 6A.jpg,invalid,
 6B.jpg,invalid,
 6C.jpg,invalid,
@@ -27,19 +19,10 @@ filename,validity,choices
 10A.jpg,invalid,SPOE HC
 10B.jpg,invalid,SPOE HC
 10C.jpg,invalid,SPOE HC
-10D.jpg,invalid,SPOE HC
 11A.jpg,invalid,
-11B.jpg,invalid,
 12A.jpg,invalid,
 13A.jpg,invalid,
 14A.jpg,valid,NEOS
-14B.jpg,valid,NEOS
-15A.jpg,valid,GRUENE
-16A.jpg,invalid,SPOE VOLT
-16B.jpg,invalid,SPOE VOLT
-16C.jpg,invalid,SPOE VOLT
-16D.jpg,invalid,SPOE VOLT
-17A.jpg,valid,HC
 17B.jpg,valid,HC
 18A.jpg,valid,BIER
 18B.jpg,valid,BIER
@@ -53,3 +36,77 @@ filename,validity,choices
 20C.jpg,valid,NEOS
 20D.jpg,valid,NEOS
 21A.jpg,invalid,FPOE HC
+22A.jpg,valid,NEOS
+22B.jpg,valid,NEOS
+22C.jpg,valid,NEOS
+22D.jpg,valid,NEOS
+22E.jpg,valid,NEOS
+22F.jpg,valid,NEOS
+25J.jpg,valid,LINKS
+25K.jpg,valid,LINKS
+25L.jpg,valid,LINKS
+25N.jpg,valid,LINKS
+25O.jpg,valid,LINKS
+26A.jpg,valid,NEOS
+26B.jpg,valid,NEOS
+26C.jpg,valid,NEOS
+26D.jpg,valid,NEOS
+26F.jpg,valid,NEOS
+27A.jpg,valid,LINKS
+27B.jpg,valid,LINKS
+27C.jpg,valid,LINKS
+27D.jpg,valid,LINKS
+27E.jpg,valid,LINKS
+27F.jpg,valid,LINKS
+28A.jpg,valid,GRUENE
+28B.jpg,valid,GRUENE
+28C.jpg,valid,GRUENE
+28D.jpg,valid,GRUENE
+28E.jpg,valid,GRUENE
+28F.jpg,valid,GRUENE
+28G.jpg,valid,GRUENE
+28H.jpg,valid,GRUENE
+29A.jpg,valid,NEOS
+29B.jpg,valid,NEOS
+29C.jpg,valid,NEOS
+29D.jpg,valid,NEOS
+29E.jpg,valid,NEOS
+29F.jpg,valid,NEOS
+29G.jpg,valid,NEOS
+29H.jpg,valid,NEOS
+29I.jpg,valid,NEOS
+30A.jpg,valid,NEOS
+30B.jpg,valid,NEOS
+30C.jpg,valid,NEOS
+30D.jpg,valid,NEOS
+30E.jpg,valid,NEOS
+30F.jpg,valid,NEOS
+30G.jpg,valid,NEOS
+31A.jpg,valid,GRUENE
+31B.jpg,valid,GRUENE
+31C.jpg,valid,GRUENE
+31D.jpg,valid,GRUENE
+31E.jpg,valid,GRUENE
+31F.jpg,valid,GRUENE
+31G.jpg,valid,GRUENE
+31H.jpg,valid,GRUENE
+31I.jpg,valid,GRUENE
+31J.jpg,valid,GRUENE
+31K.jpg,valid,GRUENE
+unsupported_1B.jpg,valid,SPOE
+unsupported_1C.jpg,valid,SPOE
+unsupported_1D.jpg,valid,SPOE
+unsupported_2B.jpg,invalid,GRUENE BIER
+unsupported_2C.jpg,invalid,GRUENE BIER
+unsupported_3B.jpg,valid,BIER
+unsupported_3C.jpg,valid,BIER
+unsupported_5C.jpg,valid,OEVP
+unsupported_14B.jpg,valid,NEOS
+unsupported_15A.jpg,valid,GRUENE
+unsupported_16A.jpg,invalid,SPOE VOLT
+unsupported_16B.jpg,invalid,SPOE VOLT
+unsupported_16C.jpg,invalid,SPOE VOLT
+unsupported_16D.jpg,invalid,SPOE VOLT
+unsupported_24B.jpg,valid,OEVP
+unsupported_25H.jpg,valid,LINKS
+unsupported_27E.jpg,valid,GRUENE

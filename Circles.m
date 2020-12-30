@@ -1,17 +1,14 @@
 function ballotCircles = Circles(ballot, ballotFilename)
     global showPlot;
     global savePlot;
-    showPlot = true;
+    showPlot = false;
     savePlot = true;
     
-    %get greyscale image
-    ballot = im2gray(ballot);
-    
-    %crop image so that only left circles are left 
-    ballot=ballot(300:2400,1:500); 
-    
-    %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
-    [centers, radii, metric] = imfindcircles(ballot,[20 60],'ObjectPolarity','bright','Sensitivity',0.90);
+    global pltM;
+    global pltN;
+    pltM = 1;
+    pltN = 1;
+    pltCount = 1;
     
     if(showPlot)
         f = figure(2);
@@ -20,17 +17,28 @@ function ballotCircles = Circles(ballot, ballotFilename)
         f = figure('visible','off');
     end
     
+    %get greyscale image
+    ballot = im2double(ballot);
+    ballot = im2gray(ballot);
+    
+    %crop image so that only left circles are left 
+    ballot=ballot(300:2150,1:500); 
+    
+    %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
+    [centers, radii, metric] = imfindcircles(ballot,[30 80],'ObjectPolarity','bright','Sensitivity',0.90);
+    
     if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
         hold on;
         imshow(ballot);
         viscircles(centers, radii,'EdgeColor','b');
+        title("Hough Circles");
     end
     
     % if no circles were found, avoid any further errors
     if(isempty(centers))
         ballotCircles = [];
     else
-   
         %find biggest circle and find circles within 0.9 % deviation
         rmax = max(radii);
         i = radii > rmax * 0.8;
@@ -70,5 +78,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
         
     if(savePlot)
         print(f,strcat("resources/results/Circles_", ballotFilename),'-dpng','-r700'); 
+        clf(f);
+        clear f;
     end
 end
