@@ -25,7 +25,9 @@ function ballotCircles = Circles(ballot, ballotFilename)
     ballot=ballot(300:2150,1:500); 
     
     %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
-    [centers, radii, metric] = imfindcircles(ballot,[30 80],'ObjectPolarity','bright','Sensitivity',0.90);
+    % [centers, radii, metric] = imfindcircles(ballot,[30 80],'ObjectPolarity','bright','Sensitivity',0.90);
+    [centers, radii] = FindCircles(ballot, [45 55], 50);
+    [centers, radii] = SortCircles(centers, radii);
     
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;

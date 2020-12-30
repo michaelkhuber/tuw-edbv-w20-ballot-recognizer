@@ -9,14 +9,17 @@
 %  ## MAIN ##
 %  ##########
 function ballotTable = Main()
+    % Add subfolders to path
+    addpath(genpath(pwd));
+
     % - Read in ordered ballot template choices
     templateChoices = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
      ballotFilenames = BallotFilenames();
     % - Manually choose Filenames (meant for debugging)
-   %ballotFilenames = ["resources/ballots/27K.jpg", "27K.jpg"];
-   ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
+   %ballotFilenames = ["resources/ballots/5A.jpg", "5A.jpg"];
+   %ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
    %ballotFilenames = ballotFilenames(49:49,:);
     % ballotFilenames = ballotFilenames(3:3,:);
     
