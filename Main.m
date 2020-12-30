@@ -13,11 +13,11 @@ function ballotTable = Main()
     templateChoices = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
-    ballotFilenames = BallotFilenames();
+     ballotFilenames = BallotFilenames();
     % - Manually choose Filenames (meant for debugging)
-    % ballotFilenames = ["resources/ballots/14A.jpg", "14A.jpg"];
-    %ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
-    ballotFilenames = ballotFilenames(3:3,:);
+    % ballotFilenames = ["resources/ballots/18D.jpg", "18D.jpg"];
+    % ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
+    % ballotFilenames = ballotFilenames(3:3,:);
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate validity array
