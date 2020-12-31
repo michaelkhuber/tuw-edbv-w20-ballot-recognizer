@@ -20,10 +20,17 @@ function ballotTable = Main()
     % - Manually choose Filenames (meant for debugging)
    %ballotFilenames = ["resources/ballots/5A.jpg", "5A.jpg"];
    ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
-   %ballotFilenames = ballotFilenames(49:49,:);
-    % ballotFilenames = ballotFilenames(3:3,:);
+   %ballotFilenames = ballotFilenames(2:10,:);
+    
+    % Get correct choices for each ballot from test_data.csv table
+    testData = readtable('resources/test_data.csv');
+    testDataChoices = string(testData.choices);
     
     numBallots = size(ballotFilenames,1);
+    % - Preallocate success array
+    % - Each entry contains if the found choices are in line with the
+    % test_data.csv table or not
+    success = strings([numBallots, 1]);
     % - Preallocate validity array
     % - Each entry can have take one of the three values:
     % - valid
@@ -40,20 +47,20 @@ function ballotTable = Main()
     % - Do something for every ballot image
     for i = 1:numBallots
         % Figure out the marked choice for a ballot image (if it is valid)
-        [validity(i), choices(i), errors(i)] = Pipeline(templateChoices, ballotFilenames(i,:));
+        [success(i), validity(i), choices(i), errors(i)] = Pipeline(templateChoices, testDataChoices(i), ballotFilenames(i,:));
     end
     
     index = (1:numBallots)';
-    colnames = ["index", "filename", "validity", "choices", "errors"];
+    colnames = ["index", "filename", "success", "validity", "choices", "errors"];
     names = ballotFilenames(:,2);
-    ballotTable = table(index, names, validity, choices, errors, 'VariableNames', colnames);
+    ballotTable = table(index, names, success, validity, choices, errors, 'VariableNames', colnames);
     writetable(ballotTable, "result.csv")
 end
 
 %% ##############
 %  ## PIPELINE ##
 %  ##############
-function [validity, choice, error] = Pipeline(templateChoices, ballotFilename)
+function [success, validity, choice, error] = Pipeline(templateChoices, testDataChoice, ballotFilename)
     error = "";
     try
         % - Implemented as suggested in the file
@@ -82,6 +89,7 @@ function [validity, choice, error] = Pipeline(templateChoices, ballotFilename)
         %  - If the right amount of circles cannot be found, declare the ballot's
         %  validity as unidentifiable -> cancel the pipeline and return
         if length(ballotCircles) ~= length(templateChoices)
+            success = "false";
             validity = "unidentified";
             choice = "";
             error = strcat("Invalid number of detected circles, should be ", num2str(length(templateChoices)), ", but was: ", num2str(length(ballotCircles)));
@@ -99,17 +107,25 @@ function [validity, choice, error] = Pipeline(templateChoices, ballotFilename)
         if length(markedCircleIndices) == 1
             validity = "valid";
             choice = templateChoices(markedCircleIndices(1));
-            return
         else
             validity = "invalid";
             choice = "";
             error = strcat("Invalid number of marked circles, should be 1, but was: ", num2str(length(markedCircleIndices)));
             % return all marked choices (if there is more than one)
             for i = markedCircleIndices
-                choice = strcat(choice, templateChoices(i), " ");
+                choice = strcat(choice, templateChoices(i));
+                if i ~= markedCircleIndices(length(markedCircleIndices))
+                    choice = strcat(choice, " ");
+                end
             end
-            return
         end
+        
+        if strcmp(testDataChoice, choice)
+            success = "true";
+        else
+            success = sprintf("false (Choice should be %s, but was %s)", testDataChoice, choice);
+        end
+        return
     catch e
         warning(getReport(e));
         validity = "unidentified";
