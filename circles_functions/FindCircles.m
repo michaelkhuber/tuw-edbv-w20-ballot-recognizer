@@ -1,4 +1,4 @@
-function [circle_centers, circle_radii] = FindCircles(im, radii, n)
+function [circle_centers, circle_radii] = FindCircles(im, radii)
     %%% Michael Huber
     
     % Convert to binary
@@ -11,7 +11,7 @@ function [circle_centers, circle_radii] = FindCircles(im, radii, n)
     h = CircularHough(im, radii_range);
     
     % Find peaks in Hough space and output circles
-    [circle_x, circle_y, circle_radii] = CircularHoughPeaks(h, radii_range, n);
+    [circle_x, circle_y, circle_radii] = CircularHoughPeaks(h, radii_range);
     circle_centers = [circle_x, circle_y];
 end
     
@@ -52,10 +52,12 @@ function h = CircularHough(im, radii)
     h = h(1+padding:end-padding, 1+padding:end-padding, :);
 end
 
-function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii, n)
+function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
+    global SENSITIVITY;
+    SENSITIVITY = 0.75;
 
     % Define 50% of maximum value as threshold
-    threshold = 0.5 * max(h, [], 'all');
+    threshold = SENSITIVITY * max(h, [], 'all');
 
     % Find local maxima in accumulator
     h_max = imregionalmax(h);
@@ -69,11 +71,11 @@ function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii, n)
     peaks = [x'; y'; radii(radii_indices)];
 
     % Sort by strength if more than n results
-    if n < size(peaks,2)
-        [~, indices_sorted] = sort(h(h_max), 'descend');
-        indices_sorted = indices_sorted(1:n);
-        peaks = peaks(:, indices_sorted);
-    end
+    %if n < size(peaks,2)
+    %    [~, indices_sorted] = sort(h(h_max), 'descend');
+    %    indices_sorted = indices_sorted(1:n);
+    %    peaks = peaks(:, indices_sorted);
+    %end
 
     % Output results
     x_out = peaks(1,:)';
