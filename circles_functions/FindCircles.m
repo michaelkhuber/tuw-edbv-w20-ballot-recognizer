@@ -1,7 +1,28 @@
 function [circle_centers, circle_radii] = FindCircles(im, radii)
-    %%% Michael Huber
+% FINDCIRCLES Performs circular hough tranform on image, finds peaks and returns found circles
+%
+% Author: 
+%   Michael Huber
+%
+% Sources:
+%   Conceptual is based on Pedersen, S. J. K. (2007). Circular hough transform. 
+%   Aalborg University, Vision, Graphics, and Interactive Systems, 123(6).
+%   
+%   Implementation is based on David Young (2020). Hough transform for circles 
+%   (https://www.mathworks.com/matlabcentral/fileexchange/26978-hough-transform-for-circles), 
+%   MATLAB Central File Exchange. Retrieved December 27, 2020.
+%
+% Inputs:
+%   im:             Image to find circles in
+%   radii:          Radii of circles to find in image
+% Outputs:
+%   circle_centers: Nx2 matrix with each entry being x and y coordinate of circle found
+%   circle_radii:   N vector with each entry being radius of circle found
+%
+% Uses:
+%   CircularHough, CircularHoughPeaks
     
-    % Convert to binary
+    % Find edges in image
     im = edge(im, 'canny');
     
     % Create radii range
@@ -16,7 +37,27 @@ function [circle_centers, circle_radii] = FindCircles(im, radii)
 end
     
 function h = CircularHough(im, radii)
-% Get indices of non-zero pixels in binary image
+% CIRCULARHOUGH Performs ciruclar hough transform for circles with given radii on binary image im
+%   and returns accumulator array h.
+%
+% Author:
+%   Michael Huber
+%
+% Source:
+%   Implementation is based on David Young (2020). Hough transform for circles 
+%   (https://www.mathworks.com/matlabcentral/fileexchange/26978-hough-transform-for-circles), 
+%   MATLAB Central File Exchange. Retrieved December 27, 2020.
+%
+% Inputs:
+%   im:     Binary image to find circles in
+%   radii:  Radii of circles to find
+%
+% Output:
+%   h:      Accumulator array containing votes in hough space
+%
+% Uses: RasteredCircle
+
+    % Get indices of non-zero pixels in binary image
     [im_y, im_x] = find(im);
     
     % Initialize accumulator array with padding to avoid out of bounds errors
@@ -53,8 +94,28 @@ function h = CircularHough(im, radii)
 end
 
 function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
+% CIRCULARHOUGHPEAKS Finds the peaks in accumulator array h and returns the peak values as circle
+%   center coordinates and their corresponding radii.
+%
+% Author:
+%   Michael Huber
+%
+% Source:
+%   Implementation is based on David Young (2020). Hough transform for circles 
+%   (https://www.mathworks.com/matlabcentral/fileexchange/26978-hough-transform-for-circles), 
+%   MATLAB Central File Exchange. Retrieved December 27, 2020.
+%
+% Inputs:
+%   h:          Accumulator array obtained by Circular Hough Transform
+%   radii:      Radii of circles to find
+%
+% Output:
+%   x_out:      x-coordinates of circle centers
+%   y_out:      y-coordinates of circle centers
+%   radii_out:  radii of circles
+
     global SENSITIVITY;
-    SENSITIVITY = 0.75;
+    SENSITIVITY = 0.65;
 
     % Define 50% of maximum value as threshold
     threshold = SENSITIVITY * max(h, [], 'all');
@@ -84,9 +145,24 @@ function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
 end
     
 function [x, y] = RasteredCircle(r)
-    % Generate rasterized circle using simple circle rastering algorithm
-    % based on rounding the values.
-    
+% RASTEREDCIRCLE Generate rasterized circle using simple circle rastering algorithm based on 
+%   rounding circle coordinates
+%
+% Author:
+%   Michael Huber
+%
+% Source:
+%   Implementation is based on David Young (2020). Hough transform for circles 
+%   (https://www.mathworks.com/matlabcentral/fileexchange/26978-hough-transform-for-circles), 
+%   MATLAB Central File Exchange. Retrieved December 27, 2020.
+%
+% Inputs:
+%   r:  Radius of circle to generate
+%
+% Output:
+%   x:  x-coordinates of circle
+%   y:  y-coordinates of circle
+
     % Get the x-coordinate of the point 45° in the upper right (NE) quadrant,
     % which therefore is the end of the first octant (NNE). This point is the 
     % one where x=y, therefore x = r/sqrt(2).
@@ -105,4 +181,4 @@ function [x, y] = RasteredCircle(r)
     % Assemble full circle by adding the mirrored half
     x = [x_half -x_half];
     y = [y_half -y_half];
-    end
+end
