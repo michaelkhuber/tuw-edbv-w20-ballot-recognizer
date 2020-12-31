@@ -10,19 +10,16 @@ Y_THRESHOLD = 20;
 x_median = median(centers_in(:,1));
 X_THRESHOLD = 50;
 
-% Include first circle that is within median threshold
-start_index = 1;
-for i = 1:length(centers_in)
-    if abs(centers_in(i,1)-x_median) < X_THRESHOLD
-        centers_out = centers_in(i,:);
-        radii_out = radii_in(i);
-        start_index = i;
-        break
-    end
+% Include first circle that is within median
+if abs(centers_in(1,1)-x_median) < X_THRESHOLD
+    centers_out = centers_in(1,:);
+    radii_out = radii_in(1);
 end
 
+
+
 % Loop through other circles
-for i = start_index:length(centers_in)
+for i = 2:length(centers_in)
     % Check if circle is equal to already covered circle
     difference = abs(centers_out(:,2) - centers_in(i,2));
     in_group = difference < Y_THRESHOLD;
