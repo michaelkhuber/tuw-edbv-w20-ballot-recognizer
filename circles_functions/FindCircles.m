@@ -53,9 +53,11 @@ function h = CircularHough(im, radii)
 end
 
 function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
+    global SENSITIVITY;
+    SENSITIVITY = 0.75;
 
     % Define 50% of maximum value as threshold
-    threshold = 0.5 * max(h, [], 'all');
+    threshold = SENSITIVITY * max(h, [], 'all');
 
     % Find local maxima in accumulator
     h_max = imregionalmax(h);
