@@ -16,15 +16,19 @@ function ballotTable = Main()
     templateChoices = Templ();
 
     % - Read in all Ballot Filenames from the Ballot Folder
-     ballotFilenames = BallotFilenames();
+    ballotFilenames = BallotFilenames();
+    
     % - Manually choose Filenames (meant for debugging)
-   %ballotFilenames = ["resources/ballots/5A.jpg", "5A.jpg"];
-   ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
-   %ballotFilenames = ballotFilenames(2:10,:);
+    %ballotIndices = 1:size(ballotFilenames,1);
+    ballotIndices = 2:2;
     
     % Get correct choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');
     testDataChoices = string(testData.choices);
+    
+    % Only choose manually set ballots
+    ballotFilenames = ballotFilenames(ballotIndices, :);
+    testDataChoices = testDataChoices(ballotIndices);
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate success array
@@ -89,7 +93,7 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         %  - If the right amount of circles cannot be found, declare the ballot's
         %  validity as unidentifiable -> cancel the pipeline and return
         if length(ballotCircles) ~= length(templateChoices)
-            success = "false";
+            success = "false (Invalid number of detected circles)";
             validity = "unidentified";
             choice = "";
             error = strcat("Invalid number of detected circles, should be ", num2str(length(templateChoices)), ", but was: ", num2str(length(ballotCircles)));
@@ -128,6 +132,7 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         return
     catch e
         warning(getReport(e));
+        success = "false (program error)";
         validity = "unidentified";
         error = "unknown (program error)";
         choice = "";
