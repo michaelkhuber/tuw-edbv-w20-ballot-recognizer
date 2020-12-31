@@ -19,7 +19,7 @@ function ballotTable = Main()
      ballotFilenames = BallotFilenames();
     % - Manually choose Filenames (meant for debugging)
    %ballotFilenames = ["resources/ballots/5A.jpg", "5A.jpg"];
-   %ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
+   ballotFilenames = ballotFilenames(1:size(ballotFilenames,1),:);
    %ballotFilenames = ballotFilenames(49:49,:);
     % ballotFilenames = ballotFilenames(3:3,:);
     

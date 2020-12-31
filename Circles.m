@@ -71,6 +71,9 @@ function ballotCircles = Circles(ballot, ballotFilename)
             if(x1 > size(ballot, 2)), x1  = size(ballot, 2); end
             if(y0 > size(ballot, 1)), y0  = size(ballot, 2); end
             if(y1 > size(ballot, 1)), y1  = size(ballot, 2); end
+            
+            if(x0 < 1), x0 = 1; end
+            if(y0 < 1), y0 = 1; end
 
             %create boundingboxes of circles 
             rectangle('Position', [x0 y0 radii(j)*2 radii(j)*2]);
