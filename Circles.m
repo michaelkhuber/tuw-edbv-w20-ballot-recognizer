@@ -82,7 +82,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
     end
         
     if(savePlot)
-        print(f,strcat("resources/results/Circles_", ballotFilename),'-dpng','-r700'); 
+        print(f,strcat("resources/results/Step3_Circles/Circles_", ballotFilename),'-dpng','-r700'); 
         clf(f);
         clear f;
     end

@@ -1,7 +1,25 @@
 % AUTHORS
 % Jakob @ TUWIEN
 % Binder Richard @ TUWIEN
-function transformed = Transform(im, ballotFilenameIn)
+function transformed = Transform(im, ballotFilenameIn, step)
+% TRANSFORM determines the ballot paper in the given input image,
+% transforms the image such that the ballot paper becomes a (near) perfect rectangle. 
+% Then crops the image to only the ballot paper. If step == 1, then the image is
+% transformed and cropped to the ballot paper, if step == 2, then the image
+% is transformed and cropped to the ballot table.
+%
+% Author:
+%   Richard Binder
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   im:        The input image
+%
+% Output:
+%   transformed:    The transformed and cropped ballot
+
         global showPlot;
         global savePlot;
         global ballotFilename;
@@ -15,6 +33,10 @@ function transformed = Transform(im, ballotFilenameIn)
         pltM = 3;
         pltN = 5;
         pltCount = 1;
+        
+        if step ~= 1 && step ~= 2
+            error("Invalid transform step");
+        end
         
         %resize image to have 2000 pixels in height without deforming
         newSize = [2000,size(im,2)/size(im,1) * 2000];
@@ -34,12 +56,23 @@ function transformed = Transform(im, ballotFilenameIn)
             imshow(im); title('Original');
         end
         
-        [normalizedImage, pltCount] = normalize(im, pltCount);
+        % normalize the image
+        if step == 1
+            [normalizedImage, pltCount] = Normalize(im, 20.0, true, pltCount);
+        elseif step == 2
+            [normalizedImage, pltCount] = Normalize(im, 5.0, false, pltCount);
+        end
         
-        minPeaks = 10;
+        % mask the image
+        if step == 1
+            [maskedImage, pltCount] = MaskImage(normalizedImage, pltCount);
+        elseif step == 2
+            [maskedImage, pltCount] = MaskImage2(normalizedImage, pltCount);
+        end
+        
+        %perform hough transformation
         maxPeaks = 50;
         
-        [maskedImage, pltCount] = maskImage(normalizedImage, pltCount);
         [H, theta, rho, H2, theta2, rho2]  = houghTransform(maskedImage, 5);
         P = houghpeaks(H, maxPeaks);
         P2 = houghpeaks(H2, maxPeaks);       
@@ -88,8 +121,9 @@ function transformed = Transform(im, ballotFilenameIn)
 		  end
         end
         
-        
-        [intersections, pltCount] = removeIsolated(intersections, maskedImage, pltCount);
+        if step == 1
+            [intersections, pltCount] = removeIsolated(intersections, maskedImage, pltCount);
+        end
         
 
         % find the convex hull from all the intersection points
@@ -130,16 +164,13 @@ function transformed = Transform(im, ballotFilenameIn)
             1, size(im, 1)/2;
             ];     
         
-        % Order the 4 corner points so that the sum of the distance to the outter
-        % image borders is as small as possible
-        % the intention is to order the corners as top left, top right,
-        % bottom right, bottom left
-        % currently, this just calculates the points in the middle of the
-        % lines between the corners, and then calculates the sum of the
-        % distances to the image border middle points
-        % this seemed to be more stable than simply calculating the
-        % distances between corners and image corners
-        % might be improvable, but works well in ~95% of cases
+        % Order the 4 ballot corner points such that the sum of the distance to the outter
+        % image borders is as small as possible. The intention is to order the corners 
+        % in a list as top left, top right, bottom right, bottom left.
+        % In this implementation, the distance sum is computed between the ballot border middle points 
+        % (points between corners) and the image border middle points. This seemed to be more stable 
+        % than simply calculating the distances between ballot corners and image corners. Works well in 99.9%
+        % of cases.
         minDist = inf;
         corners = [];
         tmpCorners = simplifiedHull;
@@ -181,57 +212,19 @@ function transformed = Transform(im, ballotFilenameIn)
 %                 text(middleImagePoints(j,1),middleImagePoints(j,2), num2str(j),'Color', 'red','FontSize',30);
             end
             hold off;
-       end
-
-		% Measure the skewed widths & heights
-		heightL = norm(corners(1,:) - corners(4,:));
-		heightR = norm(corners(2,:) - corners(3,:));
-		widthT = norm(corners(1,:) - corners(2,:));
-		widthB = norm(corners(3,:) - corners(4,:));
-
-		% Set up the target image dimensions
-		% Use the maximum of skewed width and height 
-		% to approxmate the target dimensions
-		imNewHeight = max([heightL, heightR]);
-		imNewWidth  = max([widthT, widthB]);
-        
-		cornersNew = [         1,           1; 
-					  imNewWidth,           1;
-					  imNewWidth, imNewHeight;
-							   1, imNewHeight];
-
-		% Compute the homography matrix
-		corners = corners';
-		cornersNew = cornersNew';
-                
-		h = ComputeHNorm(cornersNew, corners);
-        
-		% Apply it to the original image
-		tform = projective2d(h');
-		[imNew, RB] = imwarp(im, tform);
-        
-        if(showPlot || savePlot) 
-            % Plot the results
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(imNew); title('Transformed');
         end
-        
-        %Crop the image to to the 4 corners of the ballot
-        upper_left  = corners([1,2],1)';
-        lower_right = corners([1,2],3)';
-        
-        [lower_right_X,lower_right_Y] = transformPointsForward(tform, lower_right(1), lower_right(2));
-        [X1, Y1] = worldToIntrinsic(RB, lower_right_X, lower_right_Y);
-        
-        [upper_left_X, upper_left_Y] = transformPointsForward(tform, upper_left(1), upper_left(2));
-        [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
-        
-        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);
+       
+        % Transforms the image such that the ballot corners make up a
+        % (near) perfect rectangle.
+        [imNew, pltCount] = HomographyTransformation(im, corners, pltCount);
         
         %resize ballot to have its original template size dimensions of 2500x3500
-        %alternative: keep dimensions of input image
-        %newSize = [2000,size(imNew,2)/size(imNew,1) * 2000];
-        newSize = [2500,3500];
+        if step == 1
+            newSize = [2500,3500];
+        elseif step == 2
+            newSize = [2150,3500];
+        end
+        
         imNew = imresize(imNew,newSize);
 
         if(showPlot || savePlot) 
@@ -241,7 +234,7 @@ function transformed = Transform(im, ballotFilenameIn)
         end
         
         if(savePlot)
-            print(f,strcat("resources/results/Transform_", ballotFilename),'-dpng','-r700'); 
+            print(f,sprintf("resources/results/Step2_Transform%i/Transform%i_%s", step, step, ballotFilename),'-dpng','-r700'); 
             clf(f);
             clear f;
         end
@@ -258,97 +251,6 @@ function plotLines(lines)
     end
 end
 
-function H2to1 = ComputeHNorm(p1, p2)
-        % compute the homography norm
-		[row,col] = size(p2); 
-		L = [0]; z13 = [0,0,0];
-		p2 = [p2;ones(1,col)];
-		p1 = [p1;ones(1,col)];
-		t1 = norm_matrix(p2);
-		t2 = norm_matrix(p1);
-		p2 = t1*p2; 
-		p1 = t2*p1;
-
-		L = [p2(:,1).', z13, p1(1,1)*(-1)*(p2(:,1).');
-			 z13, p2(:,1).', p1(2,1)*(-1)*(p2(:,1).')];
-		for i=2:col
-			L = [L;
-				 p2(:,i).', z13, p1(1,i)*(-1)*(p2(:,i).');
-				 z13, p2(:,i).', p1(2,i)*(-1)*(p2(:,i).')];
-		end
-
-		a = (L.')*L;
-		[v,d] = eig(a);
-
-		min = d(9,9);
-		index = 0;
-		for i=1:9
-			if (d(i,i)~=0) & (d(i,i)<min)
-				min = d(i,i);
-				index = i;
-			end
-		end
-
-		x = v(:,index).';
-
-		Hnorm = [x(1),x(2),x(3);x(4),x(5),x(6);x(7),x(8),x(9)];
-		H2to1 = inv(t2)*Hnorm*t1;%turn "normalized H" back to H
-		end
-
-function Tnorm = norm_matrix(p2)
-		[row,col] = size(p2); %row=2, col=n
-		avg = sum(p2,2)/col;
-		totaldist = 0;
-		for i=1:col
-			totaldist = totaldist + pdist([avg(1),avg(2); p2(1,i),p2(2,i)]);
-		end
-		k = 1/(totaldist/(col*sqrt(2))); 
-		Ttran =  [1 0 -avg(1);0 1 -avg(2);0 0 1];
-		Tscale = [k 0 0;0 k 0;0 0 1];
-		Tnorm = Tscale*Ttran;
-end
-
-
-function [maskedImage, pltCount] = maskImage(img, pltCount)
-        global showPlot;
-        global savePlot;
-        global pltM;
-        global pltN;
-       
-
-		% Create a gradient magnitude mask
-		[gradMag, ~] = imgradient(img);
-		gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
-		gradMask = (gradMag > gradThreshold);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(gradMask); title('Grad Mask');
-        end
-        
-		% Find all the connected compoments & remove small ones
-        componentMask = ReduceComponents(gradMask, 1.0);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(componentMask); title('Component Reduction');
-        end
-
-        DilationMask = componentMask;
-        se = strel('octagon',12);
-        DilationMask = imdilate(DilationMask, se);
-%         se = strel('octagon',6);
-%         DilationMask = imerode(DilationMask, se);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(DilationMask); title('Dilation Mask');
-        end
-        
-        maskedImage = DilationMask;
-        
-end
-
 function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision)
 		% Use Hough transform to find vertical borders: Theta goes from 0°
 		% to 90°
@@ -358,7 +260,6 @@ function [H, theta, rho, H2, theta2, rho2] = houghTransform(maskedImg, precision
 		% to 0°
 		[H2, theta2, rho2] = hough(maskedImg, 'RhoResolution', precision, 'Theta', [-90.0:0.3:0.0]);
 end
-
 
 function [newPoints, pltCount] = removeIsolated(points, mask, pltCount)
     global showPlot;
@@ -439,195 +340,4 @@ function [newPoints, pltCount] = removeIsolated(points, mask, pltCount)
     end
     
     newPoints = newPoints;
-end
-
-function [normalizedImage, pltCount] = normalize(image, pltCount)
-    global showPlot;
-    global savePlot;
-    global pltM;
-    global pltN;
-    
-    [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.01, false, "Saturation Histogram Analysis");
-    if ( saturationSuccess )        
-        nobg = im2double(nobg);
-        nobg = rgb2gray(nobg);
-        blurredImg = imgaussfilt(nobg, 20);
-        normalizedImage = blurredImg;
-        return;
-    end
-        
-    [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.3, true, "Extended Saturation Histogram Analysis");
-    if ( saturationSuccess )
-        nobg = im2double(nobg);
-        nobg = rgb2gray(nobg);    
-        
-        chroma = getChroma(image);
-        white = sqrt(3*double(255)^2);
-        chroma = sqrt(double(chroma(:,:,1)).^2 + double(chroma(:,:,2)).^2 + double(chroma(:,:,3)).^2) ./ white;
-        chroma = adapthisteq(chroma,'clipLimit',0.02,'Distribution','rayleigh');
-        
-        chroma(nobg < 0.1) = chroma(nobg < 0.1) - 3 * std(chroma(:));
-        chroma( chroma < 0.01 ) = 0.0;
-        gray = rgb2gray(im2double(image));
-        %gray = sqrt( chroma .* gray );
-        gray(nobg < 0.1) = gray(nobg < 0.1) - 2 * std(gray(:));
-        blurredImg = imgaussfilt(gray, 100);
-        blurredImg(nobg > 0.1) = gray(nobg > 0.1);
-        blurredImg = imgaussfilt(blurredImg, 10);
-
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(blurredImg); title("Background Based Chromaticity Blurring");
-        end
-        normalizedImage = blurredImg;
-        return;
-    end
-    
-    grayImg = rgb2gray(im2double(image));
-    blurredImg = imgaussfilt(grayImg, 20);
-
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(blurredImg); title("Fallback To Denoised Brightness");
-    end
-    
-    normalizedImage = blurredImg;
-end
-
-%Removes Background based on the histogram of the saturation.
-%On a local minima of the saturation histogram, a threshold is applied onto
-%the image.
-function [thresholdImage, success, pltCount] = removeBackground(image, pltCount, maxProminence, minProminence, doZeroApprox, histogramTitle)
-    global showPlot;
-    global savePlot;
-    global pltM;
-    global pltN;
-    
-    hsv = rgb2hsv(image);    
-    mask = 1.0 - hsv(:,:,2);
-    
-    [counts, edges] = histcounts(mask, 100);
-    [locMin, locMax] = getLocals(counts, maxProminence, minProminence);
-    edges = edges(1:(length(edges)-1));
-    
-    if( isempty(locMin) ) 
-        thresholdImage = image;
-        success = 0;
-        return;
-    end    
-    
-    localMinDist = edges(locMin);
-    
-    if( doZeroApprox )
-        zeroApprox = locMin - 5 * counts(locMin) * (locMax - locMin) / (counts(locMax) - counts(locMin));
-        zeroApprox = round( zeroApprox );
-        if( zeroApprox < 1 )
-            zeroApprox = 1;
-        end
-        localMinDist = edges(round(zeroApprox));
-    end
-    
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        hold on;
-        plot(1.0-edges,counts,'Color', 'red');
-        plot(1.0-edges(locMax),counts(locMax),'^','Color', 'blue');
-        plot(1.0-edges(locMin),counts(locMin),'v','Color', 'blue');
-        
-        title(histogramTitle);
-        hold off;
-    end
-    
-    binary = mask <= localMinDist;
-    pixelsRemoved = sum(binary(:));
-    
-    thresholdImage = image;    
-    for i = 1:3
-        channel = image(:,:,i);
-        channel(binary) = 0.0;
-        thresholdImage(:,:,i) = channel;
-    end
-    
-    % assume that number of removed pixels is an indicator whether the
-    % background removal succeeded or not
-    minRemoved = 0.2 * length(binary(:));
-    maxRemoved = 0.8 * length(binary(:));
-    
-    if((pixelsRemoved < minRemoved) || (pixelsRemoved > maxRemoved) )
-        success = 0;
-    else
-        success = 1;
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(thresholdImage); title("Saturation Based Background Removal");
-        end
-    end
-end
-
-%computes a local minimum and local maximum with difference greater than
-%prominence
-function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
-    maxProminence = maxProminence * max(counts(:));
-
-    %get maxima
-    maxima = [];
-    for i = 2:(length(counts)-1)
-        if( (counts(i) > counts(i-1)) && (counts(i) > counts(i+1)) )
-            maxima = [maxima, i];
-        end
-    end
-    
-    %edge cases
-    if( counts(1) > counts(2) )
-        maxima = [1, maxima];
-    end
-    if( counts(length(counts)) > counts(length(counts)-1) )
-        maxima = [maxima, length(counts)];
-    end
-    
-    minima = [];
-    for i = 2:(length(counts)-1)
-        if( (counts(i) < counts(i-1)) && (counts(i) < counts(i+1)) )
-            minima = [minima, i];
-        end
-    end
-    
-    %edge cases
-    if( counts(1) < counts(2) )
-        minima = [1, minima];
-    end
-    if( counts(length(counts)) < counts(length(counts)-1) )
-        minima = [minima, length(counts)];
-    end
-    
-    prominentMaxima = [];
-    prominentMinima = [];
-    for i = 1:length(maxima)
-        if( counts(maxima(i)) > maxProminence )
-            for j = 1:length(minima)
-                if( minima(j) < maxima(i) && counts(minima(j)) < minProminence * counts(maxima(i)) )
-                    prominentMaxima = [prominentMaxima, maxima(i)];
-                    prominentMinima = [prominentMinima, minima(j)];
-                end
-            end
-        end
-    end
-    
-    %get right most prominent maximum
-    locMax = max(prominentMaxima);
-    
-    %and its right most assigned prominent minimum
-    locMin = max(prominentMinima(prominentMaxima==locMax));
-end
-
-%gets Chromaticity of a (double) rgb image
-function chroma = getChroma(image)
-    image = im2double(image);
-    brightness = rgb2gray(image);
-    brightness(brightness < 0.01) = 0.01;
-    r = image(:,:,1) ./ brightness;
-    g = image(:,:,2) ./ brightness;
-    b = image(:,:,3) ./ brightness;
-    chroma = cat(3, r, g, b);
-    chroma = im2uint8(chroma);
 end

@@ -11,6 +11,11 @@
 function ballotTable = Main()
     % Add subfolders to path
     addpath(genpath(pwd));
+    
+    % Create results folder
+    mkdir resources/results/Step2_Transform1;
+    mkdir resources/results/Step2_Transform2;
+    mkdir resources/results/Step3_Circles;
 
     % - Read in ordered ballot template choices
     templateChoices = Templ();
@@ -18,9 +23,9 @@ function ballotTable = Main()
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames();
     
-    % - Manually choose Filenames (meant for debugging)
-    %ballotIndices = 1:size(ballotFilenames,1);
-    ballotIndices = 2:2;
+    % - Manually choose Files (meant for debugging)
+    ballotIndices = 1:size(ballotFilenames,1);
+    %ballotIndices = 1:10;
     
     % Get correct choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');
@@ -79,9 +84,14 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         % preparedBallot = Prepare(ballotImg);
         
         %% - STEP 2
-        %  - Normalize and transform the image
-        transformedBallot = Transform(ballotImg, ballotFilename(2));
-        transformedBallot = Transform2(transformedBallot, ballotFilename(2));
+        %  - Transform1: Determine the ballot paper in the image, transform the image such
+        %  that the ballot paper is a (near) perfect rectangle. Then crop
+        %  it to only the ballot paper.
+        transformedBallot = Transform(ballotImg, ballotFilename(2), 1);
+        %  - Transform2: Determine the table in the ballot paper, transform the image such
+        %  that the ballot table is a (near) perfect rectangle. Then crop
+        %  it to only the table.
+        transformedBallot = Transform(transformedBallot, ballotFilename(2), 2);
         
         %bla = hh; %TODO: DELETE THIS LINE
         

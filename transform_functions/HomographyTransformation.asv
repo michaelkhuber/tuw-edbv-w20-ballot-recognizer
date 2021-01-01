@@ -1,0 +1,29 @@
+function HomographyTransformation(corners, )
+		% Measure the skewed widths & heights
+		heightL = norm(corners(1,:) - corners(4,:));
+		heightR = norm(corners(2,:) - corners(3,:));
+		widthT = norm(corners(1,:) - corners(2,:));
+		widthB = norm(corners(3,:) - corners(4,:));
+
+		% Set up the target image dimensions
+		% Use the maximum of skewed width and height 
+		% to approxmate the target dimensions
+		imNewHeight = max([heightL, heightR]);
+		imNewWidth  = max([widthT, widthB]);
+        
+		cornersNew = [         1,           1; 
+					  imNewWidth,           1;
+					  imNewWidth, imNewHeight;
+							   1, imNewHeight];
+
+		% Compute the homography matrix
+		corners = corners';
+		cornersNew = cornersNew';
+                
+		h = ComputeHNorm(cornersNew, corners);
+        
+		% Apply it to the original image
+		tform = projective2d(h');
+		[imNew, RB] = imwarp(im, tform);
+
+end
