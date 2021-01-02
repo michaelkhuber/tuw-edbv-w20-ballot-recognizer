@@ -5,7 +5,7 @@ function [circle_centers, circle_radii] = FindCircles(im, radii)
 %   Michael Huber
 %
 % Sources:
-%   Conceptual is based on Pedersen, S. J. K. (2007). Circular hough transform. 
+%   Conceptually based on Pedersen, S. J. K. (2007). Circular hough transform. 
 %   Aalborg University, Vision, Graphics, and Interactive Systems, 123(6).
 %   
 %   Implementation is based on David Young (2020). Hough transform for circles 
@@ -21,12 +21,15 @@ function [circle_centers, circle_radii] = FindCircles(im, radii)
 %
 % Uses:
 %   CircularHough, CircularHoughPeaks
+
+    % Histogram Equalization (maybe not neccessary)
+    % im = adapthisteq(im);
     
     % Find edges in image
     im = edge(im, 'canny');
     
     % Create radii range
-    radii_range = radii(1):1:radii(2);
+    radii_range = radii(2):-1:radii(1);
 
     % Compute Hough transform
     h = CircularHough(im, radii_range);
@@ -114,29 +117,37 @@ function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
 %   y_out:      y-coordinates of circle centers
 %   radii_out:  radii of circles
 
-    global SENSITIVITY;
-    SENSITIVITY = 0.65;
-
-    % Define 50% of maximum value as threshold
-    threshold = SENSITIVITY * max(h, [], 'all');
-
+    SENSITIVITY = 0.5;
+    
     % Find local maxima in accumulator
     h_max = imregionalmax(h);
-
-    % Remove maxima below threshold
-    h_max = h_max & (h>=threshold);
+    h_temp = h_max;
+    
+    % Increase sensitivity until low number of maxima is found
+    do = true;
+    while do
+        % Define SENSITIVITY% of maximum value as threshold
+        threshold = SENSITIVITY * max(h, [], 'all');
+        
+        % Remove maxima below threshold
+        h_temp = h_max & (h>=threshold);
+        
+        % Define number of circles found
+        num_circles_found = length(find(h_temp));
+        
+        % Break or increase sensitivity if too many circles found
+        if num_circles_found < 100
+           break; 
+        else
+           SENSITIVITY = SENSITIVITY + 0.05;
+        end
+    end
+    h_max = h_temp;
 
     % Get peaks
     peak_indices = find(h_max);
     [y, x, radii_indices] = ind2sub(size(h), peak_indices);
     peaks = [x'; y'; radii(radii_indices)];
-
-    % Sort by strength if more than n results
-    %if n < size(peaks,2)
-    %    [~, indices_sorted] = sort(h(h_max), 'descend');
-    %    indices_sorted = indices_sorted(1:n);
-    %    peaks = peaks(:, indices_sorted);
-    %end
 
     % Output results
     x_out = peaks(1,:)';

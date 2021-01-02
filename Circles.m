@@ -1,8 +1,8 @@
 function ballotCircles = Circles(ballot, ballotFilename)
     global showPlot;
     global savePlot;
-    showPlot = false;
-    savePlot = true;
+    showPlot = true;
+    savePlot = false;
     
     global pltM;
     global pltN;
@@ -26,7 +26,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
     
     %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
     % [centers, radii, metric] = imfindcircles(ballot,[30 80],'ObjectPolarity','bright','Sensitivity',0.90);
-    [centers, radii] = FindCircles(ballot, [45 55]);
+    [centers, radii] = FindCircles(ballot, [45 60]);
     [centers, radii] = FilterCircles(centers, radii);
     
     if(showPlot || savePlot) 
@@ -42,10 +42,10 @@ function ballotCircles = Circles(ballot, ballotFilename)
         ballotCircles = [];
     else
         %find biggest circle and find circles within 0.9 % deviation
-        rmax = max(radii);
-        i = radii > rmax * 0.8;
-        centers = centers(i, :);
-        radii = radii(i);
+        %rmax = max(radii);
+        %i = radii > rmax * 0.8;
+        %centers = centers(i, :);
+        %radii = radii(i);
 
 %         centers = centers(1:10,:);
 %         radii = radii(1:10,:);

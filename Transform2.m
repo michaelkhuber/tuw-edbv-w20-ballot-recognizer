@@ -10,7 +10,7 @@ function transformed = Transform2(im, ballotFilenameIn)
         global pltN;
         
         showPlot = false;
-        savePlot = true;
+        savePlot = false;
         ballotFilename = ballotFilenameIn;
         pltM = 3;
         pltN = 5;
