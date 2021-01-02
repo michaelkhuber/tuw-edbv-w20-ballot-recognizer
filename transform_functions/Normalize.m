@@ -40,31 +40,34 @@ function [normalizedImage, pltCount] = Normalize(image, blurStrength, saturation
             return;
         end
 
-        [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.3, true, "Extended Saturation Histogram Analysis");
+        [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.05, true, "Extended Saturation Histogram Analysis");
         if ( saturationSuccess )
             nobg = im2double(nobg);
             nobg = rgb2gray(nobg);    
-
-            chroma = getChroma(image);
-            white = sqrt(3*double(255)^2);
-            chroma = sqrt(double(chroma(:,:,1)).^2 + double(chroma(:,:,2)).^2 + double(chroma(:,:,3)).^2) ./ white;
-            chroma = adapthisteq(chroma,'clipLimit',0.02,'Distribution','rayleigh');
-
-            chroma(nobg < 0.1) = chroma(nobg < 0.1) - 3 * std(chroma(:));
-            chroma( chroma < 0.01 ) = 0.0;
-            gray = rgb2gray(im2double(image));
-            %gray = sqrt( chroma .* gray );
-            gray(nobg < 0.1) = gray(nobg < 0.1) - 2 * std(gray(:));
-            blurredImg = imgaussfilt(gray, 100);
-            blurredImg(nobg > 0.1) = gray(nobg > 0.1);
-            blurredImg = imgaussfilt(blurredImg, blurStrength/2);
-
-            if(showPlot || savePlot) 
-                subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-                imshow(blurredImg); title("Background Based Chromaticity Blurring");
-            end
+            blurredImg = imgaussfilt(nobg, blurStrength);
             normalizedImage = blurredImg;
             return;
+
+%             chroma = getChroma(image);
+%             white = sqrt(3*double(255)^2);
+%             chroma = sqrt(double(chroma(:,:,1)).^2 + double(chroma(:,:,2)).^2 + double(chroma(:,:,3)).^2) ./ white;
+%             chroma = adapthisteq(chroma,'clipLimit',0.02,'Distribution','rayleigh');
+% 
+%             chroma(nobg < 0.1) = chroma(nobg < 0.1) - 3 * std(chroma(:));
+%             chroma( chroma < 0.01 ) = 0.0;
+%             gray = rgb2gray(im2double(image));
+%             %gray = sqrt( chroma .* gray );
+%             gray(nobg < 0.1) = gray(nobg < 0.1) - 2 * std(gray(:));
+%             blurredImg = imgaussfilt(gray, 100);
+%             blurredImg(nobg > 0.1) = gray(nobg > 0.1);
+%             blurredImg = imgaussfilt(blurredImg, blurStrength/2);
+% 
+%             if(showPlot || savePlot) 
+%                 subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+%                 imshow(blurredImg); title("Background Based Chromaticity Blurring");
+%             end
+%             normalizedImage = blurredImg;
+%             return;
         end
     end
     
@@ -110,8 +113,8 @@ function [thresholdImage, success, pltCount] = removeBackground(image, pltCount,
     
     localMinDist = edges(locMin);
     
-    if( doZeroApprox )
-        zeroApprox = locMin - 5 * counts(locMin) * (locMax - locMin) / (counts(locMax) - counts(locMin));
+    if doZeroApprox 
+        zeroApprox = locMin - 5 * (locMax - locMin) * counts(locMin) / (counts(locMax) - counts(locMin));
         zeroApprox = round( zeroApprox );
         if( zeroApprox < 1 )
             zeroApprox = 1;
@@ -125,6 +128,9 @@ function [thresholdImage, success, pltCount] = removeBackground(image, pltCount,
         plot(1.0-edges,counts,'Color', 'red');
         plot(1.0-edges(locMax),counts(locMax),'^','Color', 'blue');
         plot(1.0-edges(locMin),counts(locMin),'v','Color', 'blue');
+        if doZeroApprox
+            plot(1.0-edges(zeroApprox), counts(zeroApprox), 'o', 'Color', 'green');
+        end
         
         title(histogramTitle);
         hold off;

@@ -1,53 +1,63 @@
 function [imNew, pltCount] = HomographyTransformation(image, corners, pltCount)
-        global showPlot;
-        global savePlot;
-        global pltM;
-        global pltN;
-        
-		% Measure the skewed widths & heights
-		heightL = norm(corners(1,:) - corners(4,:));
-		heightR = norm(corners(2,:) - corners(3,:));
-		widthT = norm(corners(1,:) - corners(2,:));
-		widthB = norm(corners(3,:) - corners(4,:));
+%
+% Author:
+%   Jakob
+%
+% Source:
+%
+% Inputs:
+%
+% Output:
 
-		% Set up the target image dimensions
-		% Use the maximum of skewed width and height 
-		% to approxmate the target dimensions
-		imNewHeight = max([heightL, heightR]);
-		imNewWidth  = max([widthT, widthB]);
-        
-		cornersNew = [         1,           1; 
-					  imNewWidth,           1;
-					  imNewWidth, imNewHeight;
-							   1, imNewHeight];
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
 
-		% Compute the homography matrix
-		corners = corners';
-		cornersNew = cornersNew';
-                
-		h = ComputeHNorm(cornersNew, corners);
-        
-		% Apply it to the original image
-		tform = projective2d(h');
-		[imNew, RB] = imwarp(image, tform);
-        
-        if(showPlot || savePlot) 
-            % Plot the results
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(imNew); title('Transformed');
-        end
-        
-        %Crop the image to to the 4 corners of the ballot
-        upper_left  = corners([1,2],1)';
-        lower_right = corners([1,2],3)';
-        
-        [lower_right_X,lower_right_Y] = transformPointsForward(tform, lower_right(1), lower_right(2));
-        [X1, Y1] = worldToIntrinsic(RB, lower_right_X, lower_right_Y);
-        
-        [upper_left_X, upper_left_Y] = transformPointsForward(tform, upper_left(1), upper_left(2));
-        [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
-        
-        imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);
+    % Measure the skewed widths & heights
+    heightL = norm(corners(1,:) - corners(4,:));
+    heightR = norm(corners(2,:) - corners(3,:));
+    widthT = norm(corners(1,:) - corners(2,:));
+    widthB = norm(corners(3,:) - corners(4,:));
+
+    % Set up the target image dimensions
+    % Use the maximum of skewed width and height 
+    % to approxmate the target dimensions
+    imNewHeight = max([heightL, heightR]);
+    imNewWidth  = max([widthT, widthB]);
+
+    cornersNew = [         1,           1; 
+                  imNewWidth,           1;
+                  imNewWidth, imNewHeight;
+                           1, imNewHeight];
+
+    % Compute the homography matrix
+    corners = corners';
+    cornersNew = cornersNew';
+
+    h = ComputeHNorm(cornersNew, corners);
+
+    % Apply it to the original image
+    tform = projective2d(h');
+    [imNew, RB] = imwarp(image, tform);
+
+    if(showPlot || savePlot) 
+        % Plot the results
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(imNew); title('Transformed');
+    end
+
+    %Crop the image to to the 4 corners of the ballot
+    upper_left  = corners([1,2],1)';
+    lower_right = corners([1,2],3)';
+
+    [lower_right_X,lower_right_Y] = transformPointsForward(tform, lower_right(1), lower_right(2));
+    [X1, Y1] = worldToIntrinsic(RB, lower_right_X, lower_right_Y);
+
+    [upper_left_X, upper_left_Y] = transformPointsForward(tform, upper_left(1), upper_left(2));
+    [X2, Y2] = worldToIntrinsic(RB, upper_left_X, upper_left_Y);
+
+    imNew = imcrop(imNew, [X2 Y2 X1-X2 Y1-Y2]);
 end
 
 function H2to1 = ComputeHNorm(p1, p2)

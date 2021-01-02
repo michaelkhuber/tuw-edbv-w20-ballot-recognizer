@@ -49,7 +49,7 @@ function [maskedImage, pltCount] = MaskImage2(img, pltCount)
         end
         
 		% Find all the connected compoments & remove small ones
-        componentMask = ReduceComponents(gradMask, 3.0);
+        componentMask = ReduceComponents(gradMask, 10.0);
         
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
@@ -57,13 +57,13 @@ function [maskedImage, pltCount] = MaskImage2(img, pltCount)
         end
 
         DilationMask = componentMask;
-        se = strel('octagon',3);
-        DilationMask = imdilate(DilationMask, se);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(DilationMask); title('Dilation Mask');
-        end        
+%         se = strel('octagon',3);
+%         DilationMask = imdilate(DilationMask, se);
+%         
+%         if(showPlot || savePlot) 
+%             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+%             imshow(DilationMask); title('Dilation Mask');
+%         end        
         
         ConvexHull = bwconvhull(DilationMask);
         ConvexHull(:,size(ConvexHull,2)) = 0.0;

@@ -17,24 +17,35 @@ function componentMask = ReduceComponents(binaryMask, strength)
         componentMask = binaryMask;
 		cc = bwconncomp(binaryMask, 4);
         
-        ccSizes = zeros(cc.NumObjects,1);
-        for i = 1 : cc.NumObjects
-            currCC = cc.PixelIdxList{i};
-            ccSizes(i) = size(currCC, 1);
-        end
-        
-		ccSizeThreshold = mean(ccSizes(:)) + strength*std(ccSizes(:));
         maxComponent = [];
-        
         for i = 1 : cc.NumObjects
             currCC = cc.PixelIdxList{i};
             if size(currCC, 1) > size(maxComponent, 1)
                 maxComponent = currCC;
             end
-            if size(currCC, 1) < ccSizeThreshold
-                componentMask(currCC) = 0;
-            end
         end
         
+        componentMask(:) = 0;
         componentMask(maxComponent) = 1;
+        
+%         ccSizes = zeros(cc.NumObjects,1);
+%         for i = 1 : cc.NumObjects
+%             currCC = cc.PixelIdxList{i};
+%             ccSizes(i) = size(currCC, 1);
+%         end
+%         
+% 		ccSizeThreshold = mean(ccSizes(:)) + strength*std(ccSizes(:));
+%         maxComponent = [];
+%         
+%         for i = 1 : cc.NumObjects
+%             currCC = cc.PixelIdxList{i};
+%             if size(currCC, 1) > size(maxComponent, 1)
+%                 maxComponent = currCC;
+%             end
+%             if size(currCC, 1) < ccSizeThreshold
+%                 componentMask(currCC) = 0;
+%             end
+%         end
+%         
+%         componentMask(maxComponent) = 1;
 end

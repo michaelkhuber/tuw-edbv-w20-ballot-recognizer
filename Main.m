@@ -22,10 +22,10 @@ function ballotTable = Main()
 
     % - Read in all Ballot Filenames from the Ballot Folder
     ballotFilenames = BallotFilenames();
+    ballotIndices = 1:size(ballotFilenames,1);
     
     % - Manually choose Files (meant for debugging)
-    ballotIndices = 1:size(ballotFilenames,1);
-    %ballotIndices = 1:10;
+    ballotIndices = 95:95;
     
     % Get correct choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');
@@ -92,8 +92,6 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         %  that the ballot table is a (near) perfect rectangle. Then crop
         %  it to only the table.
         transformedBallot = Transform(transformedBallot, ballotFilename(2), 2);
-        
-        %bla = hh; %TODO: DELETE THIS LINE
         
         %% - STEP 3
         %  - Match circles in ballot

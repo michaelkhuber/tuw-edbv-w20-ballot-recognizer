@@ -51,13 +51,13 @@ function [maskedImage, pltCount] = MaskImage(img, pltCount)
         end
 
         DilationMask = componentMask;
-        se = strel('octagon',12);
-        DilationMask = imdilate(DilationMask, se);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(DilationMask); title('Dilation Mask');
-        end
+%         se = strel('octagon',12);
+%         DilationMask = imdilate(DilationMask, se);
+%         
+%         if(showPlot || savePlot) 
+%             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+%             imshow(DilationMask); title('Dilation Mask');
+%         end
         
         maskedImage = DilationMask;
         

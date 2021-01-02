@@ -11,7 +11,6 @@ filename,validity,choices
 6B.jpg,invalid,
 6C.jpg,invalid,
 7A.jpg,invalid,NEOS HC
-7B.jpg,invalid,NEOS HC
 7C.jpg,invalid,NEOS HC
 8A.jpg,valid,NEOS
 8B.jpg,valid,NEOS
@@ -100,6 +99,7 @@ unsupported_2C.jpg,invalid,GRUENE BIER
 unsupported_3B.jpg,valid,BIER
 unsupported_3C.jpg,valid,BIER
 unsupported_5C.jpg,valid,OEVP
+unsupported_7B.jpg,invalid,NEOS HC
 unsupported_14B.jpg,valid,NEOS
 unsupported_15A.jpg,valid,GRUENE
 unsupported_16A.jpg,invalid,SPOE VOLT
