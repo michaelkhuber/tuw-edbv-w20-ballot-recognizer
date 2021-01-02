@@ -23,7 +23,7 @@ function transformed = Transform(im, ballotFilenameIn, step)
     global f;
     global pltM;
     global pltN;
-
+    
     showPlot = true;
     savePlot = true;
     ballotFilename = ballotFilenameIn;

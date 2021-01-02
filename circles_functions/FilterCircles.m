@@ -16,11 +16,14 @@ function [centers_out,radii_out] = FilterCircles(centers_in,radii_in)
 
     % Y threshold, circle centers within 20px of each other are treated
     % as equal
-    Y_THRESHOLD = 20;
+    Y_THRESHOLD = 50;
 
     % X-coordinate median and X threshold
     x_median = median(centers_in(:,1));
     X_THRESHOLD = 50;
+    
+    % Radius mean (maybe not neccessary)
+    % radius_mean = mean(radii_in);
 
     % Include first circle that is within median threshold
     start_index = 1;
