@@ -15,17 +15,20 @@ function markedCircleIndices = CheckMark(ballotCircles)
         circle(1, :) = 255;
         circle(end, :) = 255; 
         
-        circle_CC = bwconncomp(circle);
-        background_CC = bwconncomp(background);
+        [~, biggest] = CountComponents(background);
+        [num_components, ~] = CountComponents(circle);
         
-        if(showPlot || savePlot)
-            
-        end
+        %circle_CC = bwconncomp(circle);
+        %background_CC = bwconncomp(background);
         
-        numPixels = cellfun(@numel,background_CC.PixelIdxList);
-        [biggest,~] = max(numPixels);
+        %if(showPlot || savePlot)
+        %    
+        %end
         
-        if (circle_CC.NumObjects > 1) 
+        %numPixels = cellfun(@numel,background_CC.PixelIdxList);
+        %[biggest,~] = max(numPixels);
+        
+        if (num_components > 1) 
             markedCircleIndices(end+1) = k;
         elseif(biggest < 8000)
             markedCircleIndices(end+1) = k;
