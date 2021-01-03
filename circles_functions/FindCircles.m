@@ -117,7 +117,7 @@ function [x_out, y_out, radii_out] = CircularHoughPeaks(h, radii)
 %   y_out:      y-coordinates of circle centers
 %   radii_out:  radii of circles
 
-    SENSITIVITY = 0.5;
+    SENSITIVITY = 0.4;
     
     % Find local maxima in accumulator
     h_max = imregionalmax(h);
