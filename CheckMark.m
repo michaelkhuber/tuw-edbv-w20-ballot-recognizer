@@ -8,25 +8,19 @@ function markedCircleIndices = CheckMark(ballotCircles)
     for k=1:length(ballotCircles)
         circle_input = ballotCircles{k};
                                   
-        circle = imbinarize(circle_input);
-        circle = imcomplement(circle);
+        background = imbinarize(circle_input);
+        circle = imcomplement(background);
         circle(:, 1) = 255;
         circle(:, end) = 255;
         circle(1, :) = 255;
         circle(end, :) = 255; 
         
-        CC = bwconncomp(circle);
+        [~, biggest] = CountComponents(background);
+        [num_components, ~] = CountComponents(circle);
         
-        if(showPlot || savePlot)
-            
-        end
-        
-        numPixels = cellfun(@numel,CC.PixelIdxList);
-        [biggest,idx] = max(numPixels);
-        
-        if (CC.NumObjects > 1) 
+        if (num_components > 1) 
             markedCircleIndices(end+1) = k;
-        elseif(biggest > 2000)
+        elseif(biggest < 8000)
             markedCircleIndices(end+1) = k;
         end
     end

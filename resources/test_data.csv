@@ -16,12 +16,12 @@ filename,validity,choices
 8A.jpg,valid,NEOS
 8B.jpg,valid,NEOS
 8C.jpg,valid,NEOS
-10A.jpg,invalid,SPOE HC
 10B.jpg,invalid,SPOE HC
 10C.jpg,invalid,SPOE HC
 11A.jpg,invalid,
 12A.jpg,invalid,
 13A.jpg,invalid,
+13B.jpg,invalid,
 14A.jpg,valid,NEOS
 17B.jpg,valid,HC
 18A.jpg,valid,BIER
