@@ -1,5 +1,5 @@
-function transformed = Transform(im, ballotFilenameIn, step)
-% TRANSFORM finds the ballot paper in the given input image and
+function transformed = Transform(im, resultName, step)
+% TRANSFORM finds a ballot paper in the given input image and
 % transforms the image such that the ballot paper becomes a (near) perfect rectangle. 
 % Then crops the image to only the ballot paper. If step == 1, then the image is
 % transformed and cropped to the ballot paper, if step == 2, then the image
@@ -12,10 +12,12 @@ function transformed = Transform(im, ballotFilenameIn, step)
 %   Self
 %
 % Inputs:
-%   im:        The input image
+%   im:                        The input image
+%   resultName:        The name of the resulting plot file if savePlot is true
+%   step:                     Wether to transform to ballot paper (1) or table (2)
 %
 % Output:
-%   transformed:    The transformed and cropped ballot
+%   transformed:    The transformed and cropped ballot paper (or table)
 
     % Global Variables used for plotting
     global showPlot;
@@ -27,8 +29,8 @@ function transformed = Transform(im, ballotFilenameIn, step)
     global pltCount;
     
     showPlot = true; %show the plots in a figure
-    savePlot = false; %save the plots in a subfolder (expensive operation)
-    ballotFilename = ballotFilenameIn;
+    savePlot = false; %save the plots as an image in a subfolder (expensive operation)
+    ballotFilename = resultName;
     pltM = 3;
     pltN = 5;
     pltCount = 1;
@@ -37,7 +39,7 @@ function transformed = Transform(im, ballotFilenameIn, step)
         error("Invalid transform step");
     end
 
-    %resize image to have 2000 pixels in height without deforming
+    %resize image to have 2000 pixels in height without deforming it
     newSize = [2000, ceil(size(im,2)/size(im,1) * 2000)];
     im = resize(im,newSize);
 
@@ -78,11 +80,11 @@ function transformed = Transform(im, ballotFilenameIn, step)
     hull = [];
     hull(:,:) = intersections(k,:);
 
-    % reduces the hull to 4 corner points
-    simplifiedHull = findCorners(hull);
+    % reduces the hull to a quadrangle
+    quadrangle = findCorners(hull);
 
     % orders the corners as top-left, top-right, bottom-right, bottom-left
-    [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifiedHull);
+    [corners, middlePoints, middleImagePoints] = orderCorners(im, quadrangle);
 
     if(showPlot || savePlot) 
         plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints);
@@ -93,10 +95,9 @@ function transformed = Transform(im, ballotFilenameIn, step)
     imNew = HomographyTransformation(im, corners);
     
     if step == 2
-        imNew = rotateBallotTable(imNew);
-    end
-
-    if step == 2
+        % Correct Table rotation if it is off
+        imNew = correctTableRotation(imNew);
+        
         %resize ballot table to have its original template size
         newSize = [2150,3500];
         imNew = resize(imNew,newSize);
@@ -112,6 +113,7 @@ function transformed = Transform(im, ballotFilenameIn, step)
         imshow(imNew); title(t);
     end
 
+    % Save plots as an image
     if(savePlot)
         print(f,sprintf("resources/results/Step2_Transform%i/Transform%i_%s", step, step, ballotFilename),'-dpng','-r700'); 
         clf(f);
@@ -126,15 +128,29 @@ end
 
 
 function intersections = findIntersections(im, lines, lines2)
+    %FINDINTERSECTIONS finds intersection points between lines and lines2. 
+    % If an intersetion point is outside the borders defined by the image im, then that point is ignored.
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   Self
+    %
+    % Inputs:
+    %   im:           The input image
+    %   liines:       Set of lines defined by hough parameters rho and theta
+    %   liines2:     Second set of lines defined by hough parameters rho and theta
+    %
+    % Output:
+    %   intersections:    The intersection points
+    
     imH = size(im, 1);
     imW = size(im, 2);
     
-    % Find the intersections of all the lines
-    % Ignore the ones out-of-bound
     intersections = [];
     for i = 1:length(lines)
       for j = 1:length(lines2)
-       %if( j <= i ), continue; end
         p1 = lines(i).rho;
         p2 = lines2(j).rho;
         t1 = lines(i).theta;
@@ -150,19 +166,36 @@ function intersections = findIntersections(im, lines, lines2)
     end
 end
 
-function simplifiedHull = findCorners(hull)
-    %Reduce the points inside the hull set until there is only 4 points
-    %this should be the corner points of our rectangle hull
-    simplifiedHull = hull;
-    while (length(simplifiedHull) > 4)
+function quadrangle = findCorners(hull)
+    %FINDCORNERS finds 4 corners points of hull, assuming that hull is a polygon
+    %that resembles a quadrangle with 4 corners.
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   This function uses a (way simpler) variation of the Ramer–Douglas–Peucker -
+    %   Algorithm. It iteratively removes a point from the hull that is
+    %   closest to the line segment between its two neighbouring points 
+    % (making it the most irrelevant point of the hull), until only 4 points are left.
+    %
+    % Inputs:
+    %   hull:       a set of ordered points making up a convex hull
+    %
+    % Output:
+    %   quadrangle:    a set of 4 corner points, making up a quadrangle that resembles the
+    %   input hull
+    
+    quadrangle = hull;
+    while (length(quadrangle) > 4)
         minDist = inf;
-        n = length(simplifiedHull);
+        n = length(quadrangle);
         removeIndex = 0;
 
         for i=1:n
-            pt = [simplifiedHull(i,:), 0];
-            v1 = [simplifiedHull(mod(i-2,n)+1,:), 0];
-            v2 = [simplifiedHull(mod(i,n)+1,:), 0];
+            pt = [quadrangle(i,:), 0];
+            v1 = [quadrangle(mod(i-2,n)+1,:), 0];
+            v2 = [quadrangle(mod(i,n)+1,:), 0];
 
             a = v1 - v2;
             b = pt - v2;
@@ -173,18 +206,34 @@ function simplifiedHull = findCorners(hull)
                 removeIndex = i;
             end
         end
-        simplifiedHull(removeIndex,:) = [];
+        quadrangle(removeIndex,:) = [];
     end
 end
 
-function [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifiedHull)
-    % Order the 4 ballot corner points such that the sum of the distance to the outter
-    % image borders is as small as possible. The intention is to order the corners 
-    % in a list as top left, top right, bottom right, bottom left.
-    % In this implementation, the distance sum is computed between the ballot border middle points 
-    % (points between corners) and the image border middle points. This seemed to be more stable 
-    % than simply calculating the distances between ballot corners and image corners. Works well in 99.9%
-    % of cases.
+function [corners, middlePoints, middleImagePoints] = orderCorners(im, quadrangle)
+    % ORDERCORNERS orders the 4 corner points of a quadrangle. The intention 
+    % is to order the corners in a list as top left, top right, bottom right, bottom left.
+    % In this implementation, the distance sum is computed between the ballot border 
+    % middle points (points between corners) and the image border middle points (points
+    % between image corners). The 4 corners points are orderd such that
+    % this sum is minimal.
+    % This seemed to be more stable than simply calculating the distances between ballot 
+    % corners and image corners. Works well in 99.9% of cases.
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   Self
+    %
+    % Inputs:
+    %   im:     the image in which the simplifiedHull resides
+    %   quadrangle:       a set of 4 corner points, making up a quadrangle
+    %
+    % Output:
+    %   corners:                        the same set of points as in quadrangle, but ordered
+    %   middlePoints:                the points between corners
+    %   middleImagePoints:      the points between image corners
 
     middleImagePoints = [
     size(im, 2)/2, 1;
@@ -195,11 +244,11 @@ function [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifie
 
     minDist = inf;
     corners = [];
-    tmpCorners = simplifiedHull;
-    middlePoints = simplifiedHull;
+    tmpCorners = quadrangle;
+    middlePoints = quadrangle;
     for i = 1:4
         for j = 1:4
-            tmpCorners(j,:) = simplifiedHull(mod(i+j-1,4)+1,:);
+            tmpCorners(j,:) = quadrangle(mod(i+j-1,4)+1,:);
         end
         dist = 0;
         for j = 1:4
@@ -215,6 +264,16 @@ function [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifie
 end
 
 function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints)
+    % PLOTLINESANDCORNERS plots all lines specified in lines and lines2,
+    % and all points specified in intersections, hull, corners,
+    % middlePoints, middleImagePoints on the image im
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   Self
+    
     global pltM;
     global pltN;
     global pltCount;
@@ -241,6 +300,14 @@ function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, mi
 end
 
 function plotLines(lines)
+    % PLOTLINES plots all lines specified in lines
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   Self
+    
     for k = 1:length(lines)
        xy = [lines(k).point1; lines(k).point2];
        plot(xy(:,1), xy(:,2), 'LineWidth', 5, 'Color', 'black');
@@ -250,7 +317,25 @@ function plotLines(lines)
 end
 
 
-function rotated = rotateBallotTable(ballotTable)
+function rotated = correctTableRotation(ballotTable)
+    % CORRECTTABLEROTATION corrects the rotation of ballotTable. 
+    % It does this by first rotating it such that the horizontal length is
+    % longer than the vertical length. Then it rotates it such that the
+    % number of gradient Pixels is higher on the left side (since there is
+    % more black pixels on the template of the ballot table there).
+    %
+    % Author:
+    %   Richard Binder
+    %
+    % Source:
+    %   Self
+    %
+    % Inputs: 
+    %   ballotTable:    An image resembling a ballot table
+    %
+    % Output:
+    %   rotated:        Same as ballotTable, but with corrected rotation
+    
     global showPlot;
     global savePlot;
     global pltM;
