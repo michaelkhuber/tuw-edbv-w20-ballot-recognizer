@@ -26,7 +26,7 @@ function transformed = Transform(im, ballotFilenameIn, step)
     global pltN;
     global pltCount;
     
-    showPlot = true; %show the plots in a figure
+    showPlot = false; %show the plots in a figure
     savePlot = false; %save the plots in a subfolder (expensive operation)
     ballotFilename = ballotFilenameIn;
     pltM = 3;
