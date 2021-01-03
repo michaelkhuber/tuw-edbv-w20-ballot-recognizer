@@ -18,15 +18,10 @@ function markedCircleIndices = CheckMark(ballotCircles)
         [~, biggest] = CountComponents(background);
         [num_components, ~] = CountComponents(circle);
         
-        %circle_CC = bwconncomp(circle);
-        %background_CC = bwconncomp(background);
+        imshow(circle);
         
-        %if(showPlot || savePlot)
-        %    
-        %end
-        
-        %numPixels = cellfun(@numel,background_CC.PixelIdxList);
-        %[biggest,~] = max(numPixels);
+        biggest
+        num_components
         
         if (num_components > 1) 
             markedCircleIndices(end+1) = k;

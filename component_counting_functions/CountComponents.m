@@ -5,7 +5,7 @@ function [num_components, biggest] = CountComponents(binary_image)
 %   Markus Hinkel
 %
 % Sources:
-%    Haralick, Robert M., and Linda G. Shapiro, Computer and Robot Vision, Volume I, Addison-Wesley, 1992, pp. 28-48.
+%   Haralick, Robert M., and Linda G. Shapiro, Computer and Robot Vision, Volume I, Addison-Wesley, 1992, pp. 28-48.
 %
 %   (https://de.mathworks.com/help/images/ref/bwconncomp.html), 
 %   Official Matlab Documentation, retrieved 02.01.2020
@@ -17,9 +17,6 @@ function [num_components, biggest] = CountComponents(binary_image)
 %   biggest:   An Integer with the pixelnumber of the biggest found
 %   component
 %
-    imshow(binary_image);
-    fprintf('\n Starting component counting! \n');
-
     num_components = 0;
     biggest = 0;
     
@@ -39,18 +36,14 @@ function [num_components, biggest] = CountComponents(binary_image)
               end
           end           
        end
-    end
-    
-    fprintf('\n total number of components in image: %.0f\n', num_components);
-    fprintf('\n biggest is: %.0f\n', biggest);
-    
+    end    
 end
 
-function area = floodFillLabel(startX, startY, binary_image, area)
+function res_area = floodFillLabel(startX, startY, binary_image, area)
     % Mark current pixel as labeled
     global LABEL_MAT;
     LABEL_MAT(startX, startY) = 1;
-    area = area + 1;
+    res_area = area + 1;
     
     nX = [1,1,1,0,0,-1,-1,-1];
     nY = [-1,0,1,-1,1,-1,0,1];
@@ -62,7 +55,7 @@ function area = floodFillLabel(startX, startY, binary_image, area)
 
         if (x > 0 && y > 0 && x <= size(binary_image, 1) && y <= size(binary_image,2))
             if (binary_image(x,y) == 1) && (LABEL_MAT(x,y) == 0)
-                area = area + floodFillLabel(x,y, binary_image, area);
+                res_area = res_area + floodFillLabel(x,y, binary_image, area);
             end
         end
     end
