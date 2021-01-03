@@ -1,4 +1,4 @@
-function [imNew, pltCount] = HomographyTransformation(image, corners, pltCount)
+function imNew = HomographyTransformation(image, corners)
 %
 % Author:
 %   Jakob
@@ -13,6 +13,7 @@ function [imNew, pltCount] = HomographyTransformation(image, corners, pltCount)
     global savePlot;
     global pltM;
     global pltN;
+    global pltCount;
 
     % Measure the skewed widths & heights
     heightL = norm(corners(1,:) - corners(4,:));

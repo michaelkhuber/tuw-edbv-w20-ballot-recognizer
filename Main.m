@@ -25,9 +25,9 @@ function ballotTable = Main()
     ballotIndices = 1:size(ballotFilenames,1);
     
     % - Manually choose Files (meant for debugging)
-    ballotIndices = 95:95;
+    ballotIndices = 1:1;
     
-    % Get correct choices for each ballot from test_data.csv table
+    % Get expected choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');
     testDataChoices = string(testData.choices);
     
@@ -38,7 +38,7 @@ function ballotTable = Main()
     numBallots = size(ballotFilenames,1);
     % - Preallocate success array
     % - Each entry contains if the found choices are in line with the
-    % test_data.csv table or not
+    % expected choices from the test_data.csv table
     success = strings([numBallots, 1]);
     % - Preallocate validity array
     % - Each entry can have take one of the three values:
@@ -63,7 +63,7 @@ function ballotTable = Main()
     colnames = ["index", "filename", "success", "validity", "choices", "errors"];
     names = ballotFilenames(:,2);
     ballotTable = table(index, names, success, validity, choices, errors, 'VariableNames', colnames);
-    writetable(ballotTable, "result.csv")
+    writetable(ballotTable, "resources/result.csv")
 end
 
 %% ##############
@@ -72,16 +72,13 @@ end
 function [success, validity, choice, error] = Pipeline(templateChoices, testDataChoice, ballotFilename)
     error = "";
     try
-        % - Implemented as suggested in the file
+        % - Implemented as suggested in our concept file
         % "Konzept_Wahlzettel_Erkennung.pdf" -> Point 5: Methodik
         % - For each Ballot, go through the following steps:
         
         %% - STEP 1
         %  - Read in ballot image
         ballotImg = Read(ballotFilename(1));
-        
-        %  - Prepare the image for circle matching
-        % preparedBallot = Prepare(ballotImg);
         
         %% - STEP 2
         %  - Transform1: Determine the ballot paper in the image, transform the image such
@@ -99,7 +96,7 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         ballotCircles = Circles(transformedBallot, ballotFilename(2));
         
         %  - If the right amount of circles cannot be found, declare the ballot's
-        %  validity as unidentifiable -> cancel the pipeline and return
+        %  validity as unidentified -> cancel the pipeline and return
         if length(ballotCircles) ~= length(templateChoices)
             success = "false (Invalid number of detected circles)";
             validity = "unidentified";
@@ -113,7 +110,6 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         markedCircleIndices = CheckMark(ballotCircles);
         
         %% - STEP 5
-        %  - Figure out which circle is marked
         %  - If exactly one marked circle is found, declare the ballot valid and return 
         %  - otherwise, declare the ballot invalid and return
         if length(markedCircleIndices) == 1

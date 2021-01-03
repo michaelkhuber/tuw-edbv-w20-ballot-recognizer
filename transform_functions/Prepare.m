@@ -1,5 +1,5 @@
-function [normalizedImage, pltCount] = Normalize(image, blurStrength, saturationBased, pltCount)
-% NORMALIZE processes an image such that a white foreground (e.g. white
+function preparedImage = Prepare(image, blurStrength, saturationBased)
+% PREPARE processes an image such that a white foreground (e.g. white
 % ballot paper) stands out in relation to the rest of the image, and afterwards
 % gauss-blurs the image. 
 % In this implementation, foreground-seperation is done by either blacking out 
@@ -23,63 +23,43 @@ function [normalizedImage, pltCount] = Normalize(image, blurStrength, saturation
 %   blurStrength:    The sigma value for the gauss blur
 %
 % Output:
-%   normalizedImage:    resulting normalized image
+%   preparedImage:    resulting prepared image
 
     global showPlot;
     global savePlot;
     global pltM;
     global pltN;
+    global pltCount;
     
     if saturationBased
-        [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.01, false, "Saturation Histogram Analysis");
+        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.01, false, "Saturation Histogram Analysis");
         if ( saturationSuccess )        
             nobg = im2double(nobg);
-            nobg = rgb2gray(nobg);
-            blurredImg = imgaussfilt(nobg, blurStrength);
-            normalizedImage = blurredImg;
+            nobg = toGray(nobg);
+            blurredImg = gaussfilt(nobg, blurStrength);
+            preparedImage = blurredImg;
             return;
         end
 
-        [nobg, saturationSuccess, pltCount] = removeBackground(image, pltCount, 0.15, 0.05, true, "Extended Saturation Histogram Analysis");
+        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.05, true, "Extended Saturation Histogram Analysis");
         if ( saturationSuccess )
             nobg = im2double(nobg);
-            nobg = rgb2gray(nobg);    
-            blurredImg = imgaussfilt(nobg, blurStrength);
-            normalizedImage = blurredImg;
+            nobg = toGray(nobg);    
+            blurredImg = gaussfilt(nobg, blurStrength);
+            preparedImage = blurredImg;
             return;
-
-%             chroma = getChroma(image);
-%             white = sqrt(3*double(255)^2);
-%             chroma = sqrt(double(chroma(:,:,1)).^2 + double(chroma(:,:,2)).^2 + double(chroma(:,:,3)).^2) ./ white;
-%             chroma = adapthisteq(chroma,'clipLimit',0.02,'Distribution','rayleigh');
-% 
-%             chroma(nobg < 0.1) = chroma(nobg < 0.1) - 3 * std(chroma(:));
-%             chroma( chroma < 0.01 ) = 0.0;
-%             gray = rgb2gray(im2double(image));
-%             %gray = sqrt( chroma .* gray );
-%             gray(nobg < 0.1) = gray(nobg < 0.1) - 2 * std(gray(:));
-%             blurredImg = imgaussfilt(gray, 100);
-%             blurredImg(nobg > 0.1) = gray(nobg > 0.1);
-%             blurredImg = imgaussfilt(blurredImg, blurStrength/2);
-% 
-%             if(showPlot || savePlot) 
-%                 subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-%                 imshow(blurredImg); title("Background Based Chromaticity Blurring");
-%             end
-%             normalizedImage = blurredImg;
-%             return;
         end
     end
     
-    grayImg = rgb2gray(im2double(image));
-    blurredImg = imgaussfilt(grayImg, blurStrength);
+    grayImg = toGray(im2double(image));
+    blurredImg = gaussfilt(grayImg, blurStrength);
 
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
         imshow(blurredImg); title("Fallback To Denoised Brightness");
     end
     
-    normalizedImage = blurredImg;
+    preparedImage = blurredImg;
 end
 
 % Removes Background based on the histogram of the saturation of the input image.
@@ -92,11 +72,12 @@ end
 % parameters for finding a local minimum and maximum that define the
 % saturation distributions. For more info see description of function
 % "getLocals".
-function [thresholdImage, success, pltCount] = removeBackground(image, pltCount, maxProminence, minProminence, doZeroApprox, histogramTitle)
+function [thresholdImage, success] = removeBackground(image, maxProminence, minProminence, doZeroApprox, histogramTitle)
     global showPlot;
     global savePlot;
     global pltM;
     global pltN;
+    global pltCount;
     
     hsv = rgb2hsv(image);    
     mask = 1.0 - hsv(:,:,2);
@@ -170,7 +151,7 @@ end
 %   local maximum. This ensures that this local minimum is significantly
 %   smaller than the local maximum and indicates the seperation point between
 %   two different saturation distributions.
-%   - The local minimum needs to be to the right of the local maximum. This
+%   - The local maximum needs to be to the left of the local minimum. This
 %   ensures that the local maximum is the peak of the left most saturation
 %   distribution and therefore indicates a white (low saturated) foreground.
 function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
@@ -225,16 +206,4 @@ function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
     
     %and its right most assigned prominent minimum
     locMin = max(prominentMinima(prominentMaxima==locMax));
-end
-
-%gets Chromaticity of a (uint8) rgb image
-function chroma = getChroma(image)
-    image = im2double(image);
-    brightness = rgb2gray(image);
-    brightness(brightness < 0.01) = 0.01;
-    r = image(:,:,1) ./ brightness;
-    g = image(:,:,2) ./ brightness;
-    b = image(:,:,3) ./ brightness;
-    chroma = cat(3, r, g, b);
-    chroma = im2uint8(chroma);
 end

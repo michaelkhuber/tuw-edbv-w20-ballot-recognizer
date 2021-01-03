@@ -1,4 +1,4 @@
-function [maskedImage, pltCount] = MaskImage2(img, pltCount)
+function maskedImage = MaskImage2(img)
 % MASKIMAGE2  is used to compute the edges of the ballot paper
 % table. Only the edges of the table itself will remain, all others (edges
 % between background and ballot paper, edges of ballot title "Amtlicher
@@ -32,64 +32,51 @@ function [maskedImage, pltCount] = MaskImage2(img, pltCount)
 % Output:
 %   maskedImage:    resulting masked image
 
-        global showPlot;
-        global savePlot;
-        global pltM;
-        global pltN;
-       
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    global pltCount;
 
-		% Create a gradient magnitude mask
-		[gradMag, ~] = imgradient(img);
-		gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
-		gradMask = (gradMag > gradThreshold);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(gradMask); title('Grad Mask');
-        end
-        
-		% Find all the connected compoments & remove small ones
-        componentMask = ReduceComponents(gradMask, 10.0);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(componentMask); title('Component Reduction');
-        end
+    % Create a gradient magnitude mask
+    [gradMag, ~] = imgradient(img);
+    gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
+    gradMask = (gradMag > gradThreshold);
 
-        DilationMask = componentMask;
-%         se = strel('octagon',3);
-%         DilationMask = imdilate(DilationMask, se);
-%         
-%         if(showPlot || savePlot) 
-%             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-%             imshow(DilationMask); title('Dilation Mask');
-%         end        
-        
-        ConvexHull = bwconvhull(DilationMask);
-        ConvexHull(:,size(ConvexHull,2)) = 0.0;
-        ConvexHull(:,1) = 0.0;
-        ConvexHull(size(ConvexHull,1),:) = 0.0;
-        ConvexHull(1, :) = 0.0;
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(ConvexHull); title('Convex Hull');
-        end
-        
-        %ConvexHull = imgaussfilt(ConvexHull, 20);
-		[gradMag, ~] = imgradient(ConvexHull);
-        ConvexHull = gradMag > 0.00001;
-        
-        se = strel('octagon',18);
-        ConvexHull = imdilate(ConvexHull, se);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(ConvexHull); title('Border Convex Hull');
-        end
-        
-        
-        
-        maskedImage = ConvexHull;
-        
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(gradMask); title('Grad Mask');
+    end
+
+    % Find all the connected compoments & remove small ones
+    componentMask = ReduceComponents(gradMask);
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(componentMask); title('Component Reduction');
+    end  
+
+    ConvexHull = bwconvhull(componentMask);
+    ConvexHull(:,size(ConvexHull,2)) = 0.0;
+    ConvexHull(:,1) = 0.0;
+    ConvexHull(size(ConvexHull,1),:) = 0.0;
+    ConvexHull(1, :) = 0.0;
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(ConvexHull); title('Convex Hull');
+    end
+
+    [gradMag, ~] = imgradient(ConvexHull);
+    ConvexHull = gradMag > 0.00001;
+
+    structure = se('octagon',18);
+    ConvexHull = dilate(ConvexHull, structure);
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        imshow(ConvexHull); title('Border Convex Hull');
+    end
+
+    maskedImage = ConvexHull;
 end

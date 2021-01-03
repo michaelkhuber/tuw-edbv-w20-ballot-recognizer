@@ -1,5 +1,6 @@
 filename,validity,choices
 1A.jpg,valid,SPOE
+1D.jpg,valid,SPOE
 2A.jpg,invalid,GRUENE BIER
 3A.jpg,valid,BIER
 4A.jpg,invalid,SPOE GRUENE
@@ -93,7 +94,6 @@ filename,validity,choices
 31K.jpg,valid,GRUENE
 unsupported_1B.jpg,valid,SPOE
 unsupported_1C.jpg,valid,SPOE
-unsupported_1D.jpg,valid,SPOE
 unsupported_2B.jpg,invalid,GRUENE BIER
 unsupported_2C.jpg,invalid,GRUENE BIER
 unsupported_3B.jpg,valid,BIER

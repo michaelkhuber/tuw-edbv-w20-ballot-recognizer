@@ -17,15 +17,17 @@ function transformed = Transform(im, ballotFilenameIn, step)
 % Output:
 %   transformed:    The transformed and cropped ballot
 
+    % Global Variables used for plotting
     global showPlot;
     global savePlot;
     global ballotFilename;
     global f;
     global pltM;
     global pltN;
+    global pltCount;
     
-    showPlot = true;
-    savePlot = true;
+    showPlot = true; %show the plots in a figure
+    savePlot = false; %save the plots in a subfolder (expensive operation)
     ballotFilename = ballotFilenameIn;
     pltM = 3;
     pltN = 5;
@@ -36,8 +38,8 @@ function transformed = Transform(im, ballotFilenameIn, step)
     end
 
     %resize image to have 2000 pixels in height without deforming
-    newSize = [2000,size(im,2)/size(im,1) * 2000];
-    im = imresize(im,newSize);
+    newSize = [2000, ceil(size(im,2)/size(im,1) * 2000)];
+    im = resize(im,newSize);
 
     if(showPlot)
         f = figure(1);
@@ -51,22 +53,22 @@ function transformed = Transform(im, ballotFilenameIn, step)
         imshow(im); title('Original');
     end
 
-    % normalize the image
+    % prepare the image
     if step == 1
-        [normalizedImage, pltCount] = Normalize(im, 20.0, true, pltCount);
+        preparedImage = Prepare(im, 20.0, true);
     elseif step == 2
-        [normalizedImage, pltCount] = Normalize(im, 5.0, false, pltCount);
+        preparedImage = Prepare(im, 5.0, false);
     end
 
     % mask the image
     if step == 1
-        [maskedImage, pltCount] = MaskImage(normalizedImage, pltCount);
+        maskedImage = MaskImage(preparedImage);
     elseif step == 2
-        [maskedImage, pltCount] = MaskImage2(normalizedImage, pltCount);
+        maskedImage = MaskImage2(preparedImage);
     end
 
     % get lines from hough transformation of the masked image
-    [lines, lines2, pltCount] = HoughTransform(maskedImage, pltCount);
+    [lines, lines2] = HoughTransform(maskedImage);
 
     % find intersections between vertical and horizontal lines
     intersections = findIntersections(im, lines, lines2);
@@ -83,25 +85,31 @@ function transformed = Transform(im, ballotFilenameIn, step)
     [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifiedHull);
 
     if(showPlot || savePlot) 
-        pltCount = plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints, pltCount);
+        plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints);
     end
 
     % Transforms the image such that the ballot corners make up a
     % (near) perfect rectangle.
-    [imNew, pltCount] = HomographyTransformation(im, corners, pltCount);
-
-    %resize ballot to have its original template size
-    if step == 1
-        newSize = [2500,3500];
-    elseif step == 2
-        newSize = [2150,3500];
+    imNew = HomographyTransformation(im, corners);
+    
+    if step == 2
+        imNew = rotateBallotTable(imNew);
     end
 
-    imNew = imresize(imNew,newSize);
+    if step == 2
+        %resize ballot table to have its original template size
+        newSize = [2150,3500];
+        imNew = resize(imNew,newSize);
+    end
 
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(imNew); title('Resized & Cropped');
+        if step == 1
+            t = 'Cropped';
+        else
+            t = 'Rotated, Resized & Cropped'; 
+        end
+        imshow(imNew); title(t);
     end
 
     if(savePlot)
@@ -206,9 +214,10 @@ function [corners, middlePoints, middleImagePoints] = orderCorners(im, simplifie
     end
 end
 
-function pltCount = plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints, pltCount)
+function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints)
     global pltM;
     global pltN;
+    global pltCount;
 
     subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
     hold on;
@@ -237,5 +246,42 @@ function plotLines(lines)
        plot(xy(:,1), xy(:,2), 'LineWidth', 5, 'Color', 'black');
        plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
        plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'magenta');
+    end
+end
+
+
+function rotated = rotateBallotTable(ballotTable)
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    global pltCount;
+    
+    rotated = ballotTable;
+    
+    grayTable = toGray(im2double(ballotTable));
+    blurredTable = gaussfilt(grayTable, 5.0);
+    % Create a gradient magnitude mask
+    [gradMag, ~] = imgradient(blurredTable);
+    gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
+    maskedTable = (gradMag > gradThreshold);
+    
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(maskedTable); title('Table Mask');
+    end
+    
+    if size(maskedTable,1) > size(maskedTable,2) 
+        maskedTable = rot90(maskedTable);
+        rotated = rot90(rotated);
+    end
+    
+    leftSide = maskedTable(:, 1:round(size(maskedTable,2)/2));
+    rightSide = maskedTable(:, round(size(maskedTable,2)/2):size(maskedTable,2));
+    if sum(leftSide(:)) < sum(rightSide(:))
+        maskedTable = rot90(maskedTable);
+        maskedTable = rot90(maskedTable);
+        rotated = rot90(rotated);
+        rotated = rot90(rotated);
     end
 end

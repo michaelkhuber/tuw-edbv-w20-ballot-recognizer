@@ -1,4 +1,4 @@
-function [maskedImage, pltCount] = MaskImage(img, pltCount)
+function maskedImage = MaskImage(img)
 % MASKIMAGE  is used to compute the edges between a distinct foreground
 % (e.g. white ballot paper) and its background. 
 % It does this by computing the image's gradient edges and then
@@ -26,39 +26,29 @@ function [maskedImage, pltCount] = MaskImage(img, pltCount)
 % Output:
 %   maskedImage:    resulting masked image
 
-        global showPlot;
-        global savePlot;
-        global pltM;
-        global pltN;
-       
+    global showPlot;
+    global savePlot;
+    global pltM;
+    global pltN;
+    global pltCount;
 
-		% Create a gradient magnitude mask
-		[gradMag, ~] = imgradient(img);
-		gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
-		gradMask = (gradMag > gradThreshold);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(gradMask); title('Grad Mask');
-        end
-        
-		% Find all the connected compoments & remove small ones
-        componentMask = ReduceComponents(gradMask, 1.0);
-        
-        if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(componentMask); title('Component Reduction');
-        end
+    % Create a gradient magnitude mask
+    [gradMag, ~] = imgradient(img);
+    gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
+    gradMask = (gradMag > gradThreshold);
 
-        DilationMask = componentMask;
-%         se = strel('octagon',12);
-%         DilationMask = imdilate(DilationMask, se);
-%         
-%         if(showPlot || savePlot) 
-%             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-%             imshow(DilationMask); title('Dilation Mask');
-%         end
-        
-        maskedImage = DilationMask;
-        
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(gradMask); title('Grad Mask');
+    end
+
+    % Find all the connected compoments & remove small ones
+    componentMask = ReduceComponents(gradMask);
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(componentMask); title('Component Reduction');
+    end
+
+    maskedImage = componentMask;
 end
