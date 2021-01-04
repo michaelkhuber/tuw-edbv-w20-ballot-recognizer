@@ -41,27 +41,46 @@ function [num_components, biggest, biggest_size] = CountComponents(binary_image)
     end    
 end
 
-function [res_area, res_area_size] = floodFillLabel(startX, startY, binary_image, area, area_size)
-    % Mark current pixel as labeled
+function [area, area_size] = floodFillLabel(startX, startY, binary_image, area, area_size)
     global LABEL_MAT;
-    LABEL_MAT(startX, startY) = 1;
-    res_area_size = area_size + 1;
-    res_area = area;
-    res_area(startX, startY) = 1;
     
     nX = [1,1,1,0,0,-1,-1,-1];
     nY = [-1,0,1,-1,1,-1,0,1];
     
-    % Check every neighbour
-    for i = 1 : 8
-        x = startX + nX(i);
-        y = startY + nY(i);
-
-        if (x > 0 && y > 0 && x <= size(binary_image, 1) && y <= size(binary_image,2))
-            if (binary_image(x,y) == 1) && (LABEL_MAT(x,y) == 0)
-                [ar, sz] = floodFillLabel(x,y, binary_image, area, area_size);
-                res_area_size = res_area_size + sz;
-                res_area = res_area | ar;
+    % preallocate pixel stack
+    stackX = zeros(size(binary_image,1) * size(binary_image,2), 1);
+    stackY = zeros(size(binary_image,1) * size(binary_image,2), 1);
+    
+    LABEL_MAT(startX, startY) = 1;
+    % set top of stack to starting pixel
+    stackX(1) = startX;
+    stackY(1) = startY;
+    % set stack pointer
+    SP = 2;
+    
+    while SP > 1
+        area_size = area_size + 1;
+        % use pixel on top of stack
+        area(stackX(SP-1), stackY(SP-1)) = 1;
+        
+        x = stackX(SP-1) + nX;
+        y = stackY(SP-1) + nY;
+    
+        %check if out of bounds
+        isValid = (x > 0) & (y > 0) & (x <= size(binary_image, 1)) & (y <= size(binary_image,2));
+        
+        % remove pixel from stack
+        stackX(SP) = 0;
+        stackY(SP) = 0;
+        SP = SP - 1;
+        
+        for i = find(isValid)
+            if (binary_image(x(i), y(i)) == 1) && LABEL_MAT(x(i), y(i)) == 0
+                LABEL_MAT(x(i), y(i)) = 1;
+                % push pixel to top of stack
+                stackX(SP) = x(i);
+                stackY(SP) = y(i);
+                SP = SP + 1;
             end
         end
     end

@@ -11,17 +11,13 @@ function componentMask = ReduceComponents(binaryMask)
 % Output:
 %   componentMask:    resulting binary image mask with biggest component
 
-        componentMask = binaryMask;
-		cc = bwconncomp(binaryMask, 4);
+        % Reduce size since our component counting implementation is quite
+        % expensive
+        componentMask = logical(resize(binaryMask, size(binaryMask)./2));
         
-        maxComponent = [];
-        for i = 1 : cc.NumObjects
-            currCC = cc.PixelIdxList{i};
-            if size(currCC, 1) > size(maxComponent, 1)
-                maxComponent = currCC;
-            end
-        end
+        %get biggest component
+        [num_components, biggest, biggest_size] = CountComponents(componentMask);
         
-        componentMask(:) = 0;
-        componentMask(maxComponent) = 1;
+        %resize to previous size
+        componentMask = logical(resize(biggest, size(binaryMask)));
 end
