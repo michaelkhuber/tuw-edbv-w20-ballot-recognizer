@@ -17,6 +17,7 @@ function [num_components, biggest, biggest_size] = CountComponents(binary_image)
 %   biggest:   An Integer with the pixelnumber of the biggest found
 %   component
 %
+
     num_components = 0;
     biggest = zeros(size(binary_image));
     biggest_size = 0;
