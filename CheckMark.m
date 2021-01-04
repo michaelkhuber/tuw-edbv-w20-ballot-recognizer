@@ -15,12 +15,12 @@ function markedCircleIndices = CheckMark(ballotCircles)
         circle(1, :) = 255;
         circle(end, :) = 255; 
         
-        [~, biggest] = CountComponents(background);
-        [num_components, ~] = CountComponents(circle);
-        
+        [~, ~, biggest_size] = CountComponents(background);
+        [num_components, biggest, ~] = CountComponents(circle);
+                
         if (num_components > 1) 
             markedCircleIndices(end+1) = k;
-        elseif(biggest < 8000)
+        elseif(biggest_size < 8000)
             markedCircleIndices(end+1) = k;
         end
     end
