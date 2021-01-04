@@ -1,4 +1,4 @@
-function [num_components, biggest] = CountComponents(binary_image)
+function [num_components, biggest, biggest_size] = CountComponents(binary_image)
 % CountComponents Counts the white components in the given image via 8-way
 %
 % Author: 
@@ -18,7 +18,8 @@ function [num_components, biggest] = CountComponents(binary_image)
 %   component
 %
     num_components = 0;
-    biggest = 0;
+    biggest = zeros(size(binary_image));
+    biggest_size = 0;
     
     global LABEL_MAT;
     LABEL_MAT = zeros(size(binary_image));
@@ -29,21 +30,24 @@ function [num_components, biggest] = CountComponents(binary_image)
           % number and label all adjecent pixels via floodfill
           if (LABEL_MAT(i,j) == 0) && (binary_image(i,j) == 1)
               num_components = num_components +1;
-              area = floodFillLabel(i,j,binary_image,0);
+              [area, area_size] = floodFillLabel(i,j,binary_image,zeros(size(binary_image)),0);
               
-              if area > biggest
+              if area_size > biggest_size
                   biggest = area;
+                  biggest_size = area_size;
               end
           end           
        end
     end    
 end
 
-function res_area = floodFillLabel(startX, startY, binary_image, area)
+function [res_area, res_area_size] = floodFillLabel(startX, startY, binary_image, area, area_size)
     % Mark current pixel as labeled
     global LABEL_MAT;
     LABEL_MAT(startX, startY) = 1;
-    res_area = area + 1;
+    res_area_size = area_size + 1;
+    res_area = area;
+    res_area(startX, startY) = 1;
     
     nX = [1,1,1,0,0,-1,-1,-1];
     nY = [-1,0,1,-1,1,-1,0,1];
@@ -55,7 +59,9 @@ function res_area = floodFillLabel(startX, startY, binary_image, area)
 
         if (x > 0 && y > 0 && x <= size(binary_image, 1) && y <= size(binary_image,2))
             if (binary_image(x,y) == 1) && (LABEL_MAT(x,y) == 0)
-                res_area = res_area + floodFillLabel(x,y, binary_image, area);
+                [ar, sz] = floodFillLabel(x,y, binary_image, area, area_size);
+                res_area_size = res_area_size + sz;
+                res_area = res_area | ar;
             end
         end
     end
