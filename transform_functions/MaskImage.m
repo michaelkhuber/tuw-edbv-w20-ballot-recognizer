@@ -34,7 +34,8 @@ function maskedImage = MaskImage(img)
 
     % Create a gradient magnitude mask
     [gradMag, ~] = imgradient(img);
-    gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
+    %gradThreshold = mean(gradMag(:)) + 1.0 * std(gradMag(:));
+    gradThreshold = max(gradMag(:)) * 0.2;
     gradMask = (gradMag > gradThreshold);
 
     if(showPlot || savePlot) 
@@ -50,5 +51,13 @@ function maskedImage = MaskImage(img)
         imshow(componentMask); title('Component Reduction');
     end
 
-    maskedImage = componentMask;
+    structure = se('octagon',12);
+    ErodeMask = erode(componentMask, structure);
+
+    if(showPlot || savePlot) 
+        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+        imshow(ErodeMask); title('Erosion Mask');
+    end
+
+    maskedImage = ErodeMask;
 end

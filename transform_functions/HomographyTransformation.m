@@ -1,13 +1,30 @@
 function imNew = HomographyTransformation(image, corners)
+% HOMOGRAPHYTRANSFORMATION determines the projection of an image from the
+% 3d world to the 2d plane assuming that corners are 4 points on the 2d
+% plane that would make up a perfect rectangle in the 3d world. The image
+% is then transformed by undoing the projection such that the corners make
+% up a perfect rectangle again.
 %
 % Author:
 %   Jakob
+%   The code is largely taken from the article on
+%   http://6degreesoffreedom.co/document-scanner/
+%   and its matlab implementation.
 %
 % Source:
+%   The function is based on solving the linear equation for Homography
+%   Estimation in which 3d points are projected onto the 2d plane by
+%   multiplying them with a projection matrix. More on the topic can be
+%   found at:
+%   http://cseweb.ucsd.edu/classes/wi07/cse252a/homography_estimation/homography_estimation.pdf
 %
 % Inputs:
+%   image:      the image to transform
+%   corners:   4 points that would make up a perfect rectangle in the 3d
+%   world
 %
 % Output:
+%   imNew:      the transformed image
 
     global showPlot;
     global savePlot;
@@ -62,7 +79,21 @@ function imNew = HomographyTransformation(image, corners)
 end
 
 function H2to1 = ComputeHNorm(p1, p2)
-        % compute the homography norm
+% COMPUTEHNORM computes the homography projection matrix between two point sets
+%
+% Author:
+%   Jakob
+%   The code is largely taken from the article on
+%   http://6degreesoffreedom.co/document-scanner/
+%   and its matlab implementation.
+%
+% Inputs:
+%   p1:      the first point set, made up of 4 points
+%   p2:      the second point set, made up of 4 points
+%
+% Output:
+%   H2to1:  the projection matrix
+
 		[row,col] = size(p2); 
 		L = [0]; z13 = [0,0,0];
 		p2 = [p2;ones(1,col)];
@@ -99,6 +130,20 @@ function H2to1 = ComputeHNorm(p1, p2)
 end
 
 function Tnorm = norm_matrix(p2)
+% NORM_MATRIX computes the norm matrix of a point set
+%
+% Author:
+%   Jakob
+%   The code is largely taken from the article on
+%   http://6degreesoffreedom.co/document-scanner/
+%   and its matlab implementation.
+%
+% Inputs:
+%   p2:      the point set
+%
+% Output:
+%   Tnorm:  the norm matrix
+
 		[row,col] = size(p2); %row=2, col=n
 		avg = sum(p2,2)/col;
 		totaldist = 0;

@@ -40,7 +40,8 @@ function maskedImage = MaskImage2(img)
 
     % Create a gradient magnitude mask
     [gradMag, ~] = imgradient(img);
-    gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
+    %gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
+    gradThreshold = max(gradMag(:)) * 0.07;
     gradMask = (gradMag > gradThreshold);
 
     if(showPlot || savePlot) 
@@ -70,7 +71,7 @@ function maskedImage = MaskImage2(img)
     [gradMag, ~] = imgradient(ConvexHull);
     ConvexHull = gradMag > 0.00001;
 
-    structure = se('octagon',18);
+    structure = se('octagon',6);
     ConvexHull = dilate(ConvexHull, structure);
 
     if(showPlot || savePlot) 

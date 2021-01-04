@@ -62,17 +62,27 @@ function preparedImage = Prepare(image, blurStrength, saturationBased)
     preparedImage = blurredImg;
 end
 
-% Removes Background based on the histogram of the saturation of the input image.
-% On a local minimum of the saturation histogram, a threshold is applied onto
-% the image. Everything below that threshold is blacked out. If the number
-% of blacked out pixels is below 20% or above 80% or if no significant
-% local minimum could be found, it is assumed that the
-% seperation between saturation distributions failed, and success is
-% returned as false, otherwise true. maxProminence and minProminence are
-% parameters for finding a local minimum and maximum that define the
-% saturation distributions. For more info see description of function
-% "getLocals".
 function [thresholdImage, success] = removeBackground(image, maxProminence, minProminence, doZeroApprox, histogramTitle)
+% REMOVEBACKGROUND removes the background of an image based on the 
+% histogram of the saturation of the input image.
+% On a local minimum of the saturation histogram, a threshold is applied onto
+% the image. Everything above that threshold is blacked out. If the number
+% of blacked out pixels is below 20% or above 80% or if no significant
+% local minimum could be found, it is assumed that the seperation between 
+% saturation distributions (and thus also the background removal) failed.
+%
+% Author:
+%   Richard Binder
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   maxProminence:    prominence parameter for finding local maximum, see 
+% description of function "getLocals".
+%   minProminence:     prominence parameter for finding local minimum, see 
+% description of function "getLocals".
+
     global showPlot;
     global savePlot;
     global pltM;
@@ -80,7 +90,7 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     global pltCount;
     
     hsv = rgb2hsv(image);    
-    mask = 1.0 - hsv(:,:,2);
+    mask = hsv(:,:,2);
     
     [counts, edges] = histcounts(mask, 100);
     [locMin, locMax] = getLocals(counts, maxProminence, minProminence);
@@ -95,7 +105,7 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     localMinDist = edges(locMin);
     
     if doZeroApprox 
-        zeroApprox = locMin - 5 * (locMax - locMin) * counts(locMin) / (counts(locMax) - counts(locMin));
+        zeroApprox = locMin - 2 * (locMax - locMin) * counts(locMin) / (counts(locMax) - counts(locMin));
         zeroApprox = round( zeroApprox );
         if( zeroApprox < 1 )
             zeroApprox = 1;
@@ -106,18 +116,18 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
         hold on;
-        plot(1.0-edges,counts,'Color', 'red');
-        plot(1.0-edges(locMax),counts(locMax),'^','Color', 'blue');
-        plot(1.0-edges(locMin),counts(locMin),'v','Color', 'blue');
+        plot(edges,counts,'Color', 'red');
+        plot(edges(locMax),counts(locMax),'^','Color', 'blue');
+        plot(edges(locMin),counts(locMin),'v','Color', 'blue');
         if doZeroApprox
-            plot(1.0-edges(zeroApprox), counts(zeroApprox), 'o', 'Color', 'green');
+            plot(edges(zeroApprox), counts(zeroApprox), 'o', 'Color', 'green');
         end
         
         title(histogramTitle);
         hold off;
     end
     
-    binary = mask <= localMinDist;
+    binary = mask > localMinDist;
     pixelsRemoved = sum(binary(:));
     
     thresholdImage = image;    
@@ -143,18 +153,37 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     end
 end
 
-% computes a local minimum and local maximum of a saturation histogram "counts".
+function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
+% GETLOCALS computes a local minimum and a local maximum of a saturation histogram "counts".
 % There is several conditions that this local maximum and minimum need to fulfill:
-%   - The local  maximum needs to be at least maxProminence times the
+%   - The local maximum needs to be at least maxProminence times the
 %   global maximum of counts.
-%   - The local minimum needs to be less than minProminence times that
+%   - The local minimum needs to be less than minProminence times the
 %   local maximum. This ensures that this local minimum is significantly
 %   smaller than the local maximum and indicates the seperation point between
 %   two different saturation distributions.
 %   - The local maximum needs to be to the left of the local minimum. This
 %   ensures that the local maximum is the peak of the left most saturation
 %   distribution and therefore indicates a white (low saturated) foreground.
-function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
+%
+% Author:
+%   Richard Binder
+%
+% Source:
+%   Self
+%
+% Inputs: 
+%   counts:                     an array containing histogram values
+%   maxProminence:     prominence parameter for finding local maximum
+%   minProminence:      prominence parameter for finding local minimum
+%
+% Outputs:
+%   locMin:                     the index of the local minimum in the
+%   counts array
+%   locMax:                     the index of the local maximum in the
+%   counts array
+
+
     maxProminence = maxProminence * max(counts(:));
 
     %get maxima
@@ -193,7 +222,7 @@ function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
     for i = 1:length(maxima)
         if( counts(maxima(i)) > maxProminence )
             for j = 1:length(minima)
-                if( minima(j) < maxima(i) && counts(minima(j)) < minProminence * counts(maxima(i)) )
+                if( minima(j) > maxima(i) && counts(minima(j)) < minProminence * counts(maxima(i)) )
                     prominentMaxima = [prominentMaxima, maxima(i)];
                     prominentMinima = [prominentMinima, minima(j)];
                 end
@@ -201,9 +230,9 @@ function [locMin, locMax] = getLocals(counts, maxProminence, minProminence)
         end
     end
     
-    %get right most prominent maximum
-    locMax = max(prominentMaxima);
+    %get left most prominent maximum
+    locMax = min(prominentMaxima);
     
-    %and its right most assigned prominent minimum
-    locMin = max(prominentMinima(prominentMaxima==locMax));
+    %and its left most prominent minimum
+    locMin = min(prominentMinima(prominentMaxima==locMax));
 end

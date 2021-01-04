@@ -23,12 +23,11 @@ function transformed = Transform(im, resultName, step)
     global showPlot;
     global savePlot;
     global ballotFilename;
-    global f;
     global pltM;
     global pltN;
     global pltCount;
     
-    showPlot = false; %show the plots in a figure
+    showPlot = true; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
@@ -151,14 +150,12 @@ function intersections = findIntersections(im, lines, lines2)
     intersections = [];
     for i = 1:length(lines)
       for j = 1:length(lines2)
-        p1 = lines(i).rho;
-        p2 = lines2(j).rho;
-        t1 = lines(i).theta;
-        t2 = lines2(j).theta;
+        r1 = lines(i).rho;  t1 = lines(i).theta;
+        r2 = lines2(j).rho; t2 = lines2(j).theta;
 
-        x = (p1*sind(t2)-p2*sind(t1))/(cosd(t1)*sind(t2)-sind(t1)*cosd(t2));
-        y = (p1*cosd(t2)-p2*cosd(t1))/(sind(t1)*cosd(t2)-cosd(t1)*sind(t2));
-        if (isnan(x) || isnan(y) || x < 1 || x > imW || y < 1 || y > imH)
+        x = (r1*sind(t2)-r2*sind(t1))/(cosd(t1)*sind(t2)-sind(t1)*cosd(t2));
+        y = (r1*cosd(t2)-r2*cosd(t1))/(sind(t1)*cosd(t2)-cosd(t1)*sind(t2));
+        if (isnan(x) || isnan(y) || x < 1-200 || x > imW+200 || y < 1-200 || y > imH+200)
             continue;
         end
         intersections = [intersections; x, y];

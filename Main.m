@@ -1,14 +1,29 @@
-% - Our pipeline can return 4 different outputs:
-% - ballot is invalid
-% - ballot's validity is unidentifiable
-% - ballot is inaproppriately marked
-% - ballot is valid and apropproiately marked -> return marked choice
-
-
 %% ##########
 %  ## MAIN ##
 %  ##########
 function ballotTable = Main()
+% MAIN is the main function of our program. It reads *.jpg ballot images
+% from the subfolder "resources/ballots" and tries to correctly find the voting
+% choice that was marked for each one of them.
+%
+% Author:
+%   Richard Binder
+%
+% Output:
+%   ballotTable:    a table containing a row for each ballot image, with the
+%   following columns:
+%           index:          the index of each ballot image.
+%           filename:     the file name of each ballot image.
+%           success:     whether the marked choice(s) of the ballot image were correctly found 
+%                               by our program or not. This is decided by comparing the found choices 
+%                               to the expected choices given in the .csv file "resources/test_data.csv".
+%           validity:        whether the vote on the ballot image is valid
+%                               or invalid. (more or less than one marked choice makes the vote invalid). 
+%                               This will be "unidentified" if the ballot image could not be processed correctly.
+%           choices:      the choices that our program found for each ballot image.
+%           errors:         if the validity of a ballot image is "invalid" or "unidentified", then
+%                               the reason behind it is given here.
+
     % Add subfolders to path
     addpath(genpath(pwd));
     
@@ -25,15 +40,15 @@ function ballotTable = Main()
     ballotIndices = 1:size(ballotFilenames,1);
     
     % - Manually choose Files (meant for debugging)
-    ballotIndices = 1:94;
+    ballotIndices = 1:93;
     
     % Get expected choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');
-    testDataChoices = string(testData.choices);
+    expectedChoices = string(testData.choices);
     
     % Only choose manually set ballots
     ballotFilenames = ballotFilenames(ballotIndices, :);
-    testDataChoices = testDataChoices(ballotIndices);
+    expectedChoices = expectedChoices(ballotIndices);
     
     numBallots = size(ballotFilenames,1);
     % - Preallocate success array
@@ -56,7 +71,7 @@ function ballotTable = Main()
     % - Do something for every ballot image
     for i = 1:numBallots
         % Figure out the marked choice for a ballot image (if it is valid)
-        [success(i), validity(i), choices(i), errors(i)] = Pipeline(templateChoices, testDataChoices(i), ballotFilenames(i,:));
+        [success(i), validity(i), choices(i), errors(i)] = Pipeline(templateChoices, expectedChoices(i), ballotFilenames(i,:));
     end
     
     index = (1:numBallots)';
@@ -69,7 +84,28 @@ end
 %% ##############
 %  ## PIPELINE ##
 %  ##############
-function [success, validity, choice, error] = Pipeline(templateChoices, testDataChoice, ballotFilename)
+function [success, validity, choice, error] = Pipeline(templateChoices, expectedChoice, ballotFilename)
+%PIPELINE finds the marked choice(s) of a ballot image
+%
+% Author:
+%   Richard Binder
+%
+% Input:
+%   templateChoices:        the possible voting choices in the template
+%   ballot.
+%   expectedChoice:         the expected choice of the ballot image
+%   ballotFilename:            the full path+name of the ballot image file
+%
+% Output:
+%   success:        whether the marked choices were correctly found or not,
+%   based on expectedChoice
+%   validity:        whether the vote on the ballot image is valid
+%   or invalid. (more or less than one marked choice makes the vote invalid). 
+%   This will be "unidentified" if the ballot image could not be processed correctly.
+%   choices:      the marked choices of the ballot image
+%   errors:         if the validity of a ballot image is "invalid" or "unidentified", then
+%   the reason behind it is given here.
+
     error = "";
     try
         % - Implemented as suggested in our concept file
@@ -128,10 +164,10 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
             end
         end
         
-        if strcmp(testDataChoice, choice)
+        if strcmp(expectedChoice, choice)
             success = "true";
         else
-            success = sprintf("false (Choice should be %s, but was %s)", testDataChoice, choice);
+            success = sprintf("false (Choice should be %s, but was %s)", expectedChoice, choice);
         end
         return
     catch e

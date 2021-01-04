@@ -1,4 +1,13 @@
 function ballotFilenames = BallotFilenames()
+% BALLOTFILENAMES gets all filenames from "*.jpg" files in the subfolder "resources/ballots"
+%
+% Author:
+%   Richard Binder
+%
+% Output:
+%   ballotFilenames:    list of filenames. Each entry contains the full
+%   file path and filename (1) and the file name (2)
+
     ballotFolder = "resources/ballots";
     
     % check if folder exists
