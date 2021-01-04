@@ -1,11 +1,12 @@
 function ballotCircles = Circles(ballot, ballotFilename)
     global showPlot;
     global savePlot;
-    showPlot = false;
-    savePlot = false;
-    
     global pltM;
     global pltN;
+    global pltCount;
+    
+    showPlot = false;
+    savePlot = true;
     pltM = 1;
     pltN = 1;
     pltCount = 1;
@@ -33,23 +34,13 @@ function ballotCircles = Circles(ballot, ballotFilename)
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
         hold on;
         imshow(ballot);
-        viscircles(centers, radii,'EdgeColor','b');
         title("Hough Circles");
     end
     
     % if no circles were found, avoid any further errors
     if(isempty(centers))
         ballotCircles = [];
-    else
-        %find biggest circle and find circles within 0.9 % deviation
-        %rmax = max(radii);
-        %i = radii > rmax * 0.8;
-        %centers = centers(i, :);
-        %radii = radii(i);
-
-%         centers = centers(1:10,:);
-%         radii = radii(1:10,:);
-        
+    else        
         if(showPlot || savePlot) 
             viscircles(centers, radii,'EdgeColor','r');
             hold off;

@@ -1,4 +1,28 @@
 function [lines, lines2] = HoughTransform(maskedImage)
+%HOUGHTRANSFORM finds horizontal and vertical lines in an image mask by
+%using the hough transformation for lines.
+% 
+% Author:
+%   Richard Binder
+%
+% Source:
+%   All the Hough functions that were implemented are based on the Matlab
+%   functions "hough", "houghpeaks" and "houghlines". They take similar
+%   inputs and give similar outputs.
+%   Helpful for the exact implementation was prior knowledge about Hough
+%   Transformation and the documentation of the given matlab functions on
+%   mathworks.com.
+%   Also the (very) short demo on Hough Transformation at
+%   https://www.mathworks.com/matlabcentral/fileexchange/52183-simple-demo-of-hough-transform-implementation
+%   was helpful.
+%
+% Input:
+%   maskedImage:    the image mask in which to find lines
+%
+% Output:
+%   lines:      vertical lines that were found in the image mask
+%   lines2:    horizontal lines that were found in the image mask
+
     global showPlot;
     global savePlot;
     global pltCount;
@@ -11,19 +35,19 @@ function [lines, lines2] = HoughTransform(maskedImage)
 
     % Use Hough transform to find vertical lines
     thetaInterval = [-45.0 : 0.25 : 44.75];
-    [H, theta, rho] = Hough(maskedImage, rhoInterval, thetaInterval);
+    [H, thetaInterval, rhoInterval] = Hough(maskedImage, rhoInterval, thetaInterval);
     P = Houghpeaks(H);
     lines = Houghlines(maskedImage, thetaInterval, rhoInterval, P);
 
     % Use Hough transform to find horizontal lines
     thetaInterval2 = [-90.0 : 0.25 : -44.75];
     thetaInterval2 = [thetaInterval2, 45.0 : 0.25 : 89.75];
-    [H2, theta2, rho2] = Hough(maskedImage, rhoInterval, thetaInterval2);
+    [H2, thetaInterval2, rhoInterval2] = Hough(maskedImage, rhoInterval, thetaInterval2);
     P2 = Houghpeaks(H2);
-    lines2 = Houghlines(maskedImage, thetaInterval2, rhoInterval, P2);
+    lines2 = Houghlines(maskedImage, thetaInterval2, rhoInterval2, P2);
 
     if(showPlot || savePlot)
-         plotHoughTransform(H, theta, rho, P, H2, theta2, rho2, P2);
+         plotHoughTransform(H, thetaInterval, rhoInterval, P, H2, thetaInterval2, rhoInterval2, P2);
     end
 end
 
@@ -32,6 +56,26 @@ end
 
 
 function [ H, thetaInterval, rhoInterval ] = Hough( maskedImage, rhoInterval, thetaInterval )
+%HOUGH creates an accumulator matrix from a masked image. Each row in the
+% matrix refers to a rho value, and each column refers to a theta value,
+% where rho and theta are parameters for a line in hough representation.
+% Each element in the accumulator matrix is the number of pixels on a particular line.
+%
+% Author:
+%   Richard Binder
+%
+% inputs:
+%   maskedImage:    the masked image
+%   rhoInterval:          the interval of possible rho values for lines in
+%   the masked image.
+%   thetaInterval:          the interval of possible theta values for lines in
+%   the masked image.
+%
+% outputs:
+%   H:                          the accumulator array
+%   thetaInterval:        same as input thetaInterval
+%   rhoInterval:           same as input rhoInterval
+
     H = zeros(length(rhoInterval),length(thetaInterval));
     [y, x] = find(maskedImage);
 
@@ -45,6 +89,8 @@ function [ H, thetaInterval, rhoInterval ] = Hough( maskedImage, rhoInterval, th
 end
 
 function rhoIndex = getRhoIndex(rho, rhoInterval)
+% Author:
+%   Richard Binder
     maxRho = max(rhoInterval);
     minRho = min(rhoInterval);
     rhoIndex = (rho + abs(minRho) ) / ( abs(minRho) + maxRho ) * length(rhoInterval);
@@ -54,6 +100,18 @@ end
 
 
 function P = Houghpeaks(H)
+%HOUGHPEAKS finds local maxima in a matrix H, whilst neglacting those that
+%are smaller than 0.5 * max(H(:))
+%
+% Author:
+%   Richard Binder
+%
+% inputs:
+%   H:      a matrix in which to find peaks
+%
+% outputs:
+%   P:      the peaks in H, given as indices
+
     peaks = ordfilt2(H, 9, ones(3, 3));
     peaksBinary = (H == peaks) & (H > 0);
     
@@ -66,6 +124,23 @@ end
 
 
 function lines = Houghlines(maskedImage, thetaInterval, rhoInterval, P)
+%HOUGHLINES returns lines within a masked image in hough representation 
+% based on the intervals of possible rho and theta values and their given indices
+%
+% Author:
+%   Richard Binder
+%
+% inputs:
+%   maskedImage:      the masked image
+%   thetaInterval:         interval of possible theta values
+%   rhoIntevral:            interval of possible rho values
+%   P:                           list of lines, given as indices of
+%   thetaInterval and rhoInterval
+%
+% outputs:
+%   lines:      a list of structures. each structure is a line with
+%   properties "rho", "theta", "point1", "point2"
+
     lines = [];
     for i = [1 : size(P, 1)]
         peak = P(i,:);
@@ -80,6 +155,21 @@ end
 
 
 function [point1, point2] = findEndpoints(maskedImage, line, rhoInterval)
+%FINDENDPOINTS finds the first and last endpoint of a line in a masked image
+%given in hough representation. 
+%
+% Author:
+%   Richard Binder
+%
+% inputs:
+%   maskedImage:      the masked image
+%   line:                        the line of which to find endpoints
+%   rhoInterval:            the possible rho values for lines
+%
+% outputs:
+%   point1:         the first endpoint
+%   point2:         the second endpoint
+
     [y, x] = find(maskedImage);
     
     rho = x*cosd(line.theta) + y*sind(line.theta);
@@ -95,27 +185,52 @@ function [point1, point2] = findEndpoints(maskedImage, line, rhoInterval)
 end
 
 
-function plotHoughTransform(H, theta, rho, P, H2, theta2, rho2, P2)
+function plotHoughTransform(H, thetaInterval, rhoInterval, P, H2, thetaInterval2, rhoInterval2, P2)
+%PLOTHOUGHTRANSFORM plots the accumulator matrix of a hough 
+% transformation and its peaks.
+% The plot is seperated into two plots, one for vertical and one for
+% hoizontal lines.
+%
+% Author:
+%   Richard Binder
+%
+% Source:
+%   The code is based on the hough transform visualization demo on
+%   mathworks.com:
+%   https://www.mathworks.com/help/images/ref/hough.html
+%
+% inputs:
+%   H:                          the accumulator matrix for horizontal lines
+%   thetaInterval:        the interval of possible theta values for horizontal lines
+%   rhoInterval:           the interval of possible rho values for horizontal lines
+%   P:                          the peaks in H for horizontal lines, given as indices of
+%   thetaInterval and rhoInterval.
+%   H2:                          the accumulator matrix for vertical lines
+%   thetaInterval2:        the interval of possible theta values for vertical lines
+%   rhoInterval2:           the interval of possible rho values for vertical lines
+%   P2:                          the peaks in H for vertical lines, given as indices of
+%   thetaInterval and rhoInterval.
+
     global pltM;
     global pltN;
     global pltCount;
     
     %plot Vertical Hough transformation
     subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-    imshow(imadjust(rescale(H)),'XData',theta,'YData',rho, 'InitialMagnification','fit');
+    imshow(imadjust(rescale(H)),'XData',thetaInterval,'YData',rhoInterval, 'InitialMagnification','fit');
      axis on, axis normal, hold on;
      xlabel('\theta'), ylabel('\rho');
-    plot(theta(P(:,2)),rho(P(:,1)),'s','color','white'); %plot peaks
+    plot(thetaInterval(P(:,2)),rhoInterval(P(:,1)),'s','color','white'); %plot peaks
     colormap(gca,hot);
      title('Hough Transform Vertical');
     hold off;
 
     %plot Horizontal Hough transformation
     subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-    imshow(imadjust(rescale(H2)),'XData',theta2,'YData',rho2);
+    imshow(imadjust(rescale(H2)),'XData',thetaInterval2,'YData',rhoInterval2);
      axis on, axis normal, hold on;
      xlabel('\theta'), ylabel('\rho');
-    plot(theta2(P2(:,2)),rho2(P2(:,1)),'s','color','white'); %plot peaks
+    plot(thetaInterval2(P2(:,2)),rhoInterval2(P2(:,1)),'s','color','white'); %plot peaks
     colormap(gca,hot);
      title('Hough Transform Horizontal');
     hold off;
