@@ -1,4 +1,4 @@
-function imNew = HomographyTransformation(image, corners)
+function imNew = HomographyTransformation(image, corners, step)
 % HOMOGRAPHYTRANSFORMATION determines the projection of an image from the
 % 3d world to the 2d plane assuming that corners are 4 points on the 2d
 % plane that would make up a perfect rectangle in the 3d world. The image
@@ -6,10 +6,9 @@ function imNew = HomographyTransformation(image, corners)
 % up a perfect rectangle again.
 %
 % Author:
-%   Jakob
-%   The code is largely taken from the article on
-%   http://6degreesoffreedom.co/document-scanner/
-%   and its matlab implementation.
+%   Jakob, Richard
+%   The code is partially taken from
+%   https://github.com/jasonfly07/matlab_ws/blob/master/document_scanner/main.m
 %
 % Source:
 %   The function is based on solving the linear equation for Homography
@@ -32,17 +31,42 @@ function imNew = HomographyTransformation(image, corners)
     global pltN;
     global pltCount;
 
-    % Measure the skewed widths & heights
+    % Measure the (skewed) widths & heights of the quadrangle
     heightL = norm(corners(1,:) - corners(4,:));
     heightR = norm(corners(2,:) - corners(3,:));
     widthT = norm(corners(1,:) - corners(2,:));
     widthB = norm(corners(3,:) - corners(4,:));
+    
+    % cancel if points are too close to each other (results in Matlab
+    % crashing when performing imwarp)
+    if (heightL < 300 || heightR < 300 || widthT < 300 || widthB < 300)
+        error("Points of quadrangle too close to each other, cannot perform imwarp");
+    end
 
-    % Set up the target image dimensions
-    % Use the maximum of skewed width and height 
-    % to approxmate the target dimensions
-    imNewHeight = max([heightL, heightR]);
-    imNewWidth  = max([widthT, widthB]);
+    % Use the maximum of the quadrangle width and height 
+    % to approxmate the quadrangle dimensions
+    quadrangleHeight = max([heightL, heightR]);
+    quadrangleWidth  = max([widthT, widthB]);
+    
+    % We know the dimensions of our ballot paper and ballot table, so we
+    % can just use them to define the dimensions of the new rectangle
+    if step == 1
+        ballotHeight = 2100;
+        ballotWidth = 2970;
+    elseif step == 2
+        ballotHeight = 2150;
+        ballotWidth = 3520;
+    end
+    
+    % If width is larger than height, then define the new image dimensions
+    % normally, otherwise the ballot is rotated
+    if quadrangleWidth > quadrangleHeight
+        imNewWidth = ballotWidth;
+        imNewHeight = ballotHeight;
+    else
+        imNewWidth = ballotHeight;
+        imNewHeight = ballotWidth;
+    end
 
     cornersNew = [         1,           1; 
                   imNewWidth,           1;
@@ -83,9 +107,8 @@ function H2to1 = ComputeHNorm(p1, p2)
 %
 % Author:
 %   Jakob
-%   The code is largely taken from the article on
-%   http://6degreesoffreedom.co/document-scanner/
-%   and its matlab implementation.
+%   The code is largely taken from
+%   https://github.com/jasonfly07/matlab_ws/blob/master/document_scanner/ComputeHNorm.m
 %
 % Inputs:
 %   p1:      the first point set, made up of 4 points
@@ -134,9 +157,8 @@ function Tnorm = norm_matrix(p2)
 %
 % Author:
 %   Jakob
-%   The code is largely taken from the article on
-%   http://6degreesoffreedom.co/document-scanner/
-%   and its matlab implementation.
+%   The code is largely taken from
+%   https://github.com/jasonfly07/matlab_ws/blob/master/document_scanner/ComputeHNorm.m
 %
 % Inputs:
 %   p2:      the point set

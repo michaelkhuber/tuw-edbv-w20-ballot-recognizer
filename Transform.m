@@ -27,7 +27,7 @@ function transformed = Transform(im, resultName, step)
     global pltN;
     global pltCount;
     
-    showPlot = true; %show the plots in a figure
+    showPlot = false; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
@@ -91,14 +91,14 @@ function transformed = Transform(im, resultName, step)
 
     % Transforms the image such that the ballot corners make up a
     % (near) perfect rectangle.
-    imNew = HomographyTransformation(im, corners);
+    imNew = HomographyTransformation(im, corners, step);
     
     if step == 2
         % Correct Table rotation if it is off
         imNew = correctTableRotation(imNew);
         
         %resize ballot table to have its original template size
-        newSize = [2150,3500];
+        newSize = [2150,3520];
         imNew = resize(imNew,newSize);
     end
 
@@ -345,12 +345,12 @@ function rotated = correctTableRotation(ballotTable)
     blurredTable = gaussfilt(grayTable, 5.0);
     % Create a gradient magnitude mask
     [gradMag, ~] = imgradient(blurredTable);
-    gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
+    gradThreshold = max(gradMag(:)) * 0.07;
     maskedTable = (gradMag > gradThreshold);
     
     if(showPlot || savePlot) 
         subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(maskedTable); title('Table Mask');
+        imshow(maskedTable); title('Table Mask To Fix Rotation');
     end
     
     if size(maskedTable,1) > size(maskedTable,2) 

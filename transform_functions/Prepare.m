@@ -52,6 +52,7 @@ function preparedImage = Prepare(image, blurStrength, saturationBased)
     end
     
     grayImg = toGray(im2double(image));
+    %grayImg = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
     blurredImg = gaussfilt(grayImg, blurStrength);
 
     if(showPlot || savePlot) 

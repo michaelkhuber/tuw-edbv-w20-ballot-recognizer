@@ -40,7 +40,6 @@ function maskedImage = MaskImage2(img)
 
     % Create a gradient magnitude mask
     [gradMag, ~] = imgradient(img);
-    %gradThreshold = mean(gradMag(:)) - 0.2 * std(gradMag(:));
     gradThreshold = max(gradMag(:)) * 0.07;
     gradMask = (gradMag > gradThreshold);
 

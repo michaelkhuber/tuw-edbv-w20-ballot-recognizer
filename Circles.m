@@ -23,7 +23,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
     ballot = im2gray(ballot);
     
     %crop image so that only left circles are left 
-    ballot=ballot(300:2150,1:500); 
+    ballot=ballot(300:2150,1:450); 
     
     %find 10 "strongest" circles, area 15-60 maybe has to be adjusted (o in text may be recognized as circle) 
     % [centers, radii, metric] = imfindcircles(ballot,[30 80],'ObjectPolarity','bright','Sensitivity',0.90);
