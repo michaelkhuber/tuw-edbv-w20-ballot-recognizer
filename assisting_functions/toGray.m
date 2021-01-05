@@ -1,3 +1,17 @@
+% TOGRAY takes an RGB image and returns a grayscale image, accepts grayscale images as inputs and returns them unmodified  
+%
+% Author:
+%   Marie-Therese Wiedhalm
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   im:                        The input image   
+%
+% Output:
+%   gray:                      grayscale image  
+
 function [gray] = toGray(img)
     [a,b,c]=size(img);
     if c==3 
