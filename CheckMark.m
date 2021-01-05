@@ -28,25 +28,25 @@ function markedCircleIndices = CheckMark(ballotCircles)
         else
            % split horizontally & count components, if there is only one 
            % empty circle, it should stay with 1 component          
-           for j=scan_dpixel: (size(circle, 1) / scan_dpixel)
-               tmp_circle = circle;
-               tmp_circle(2:end-1, j * scan_dpixel) = 0;
-               [num_components, ~, ~] = CountComponents(tmp_circle);
+           %for j=scan_dpixel: (size(circle, 1) / scan_dpixel)
+           %    tmp_circle = circle;
+           %    tmp_circle(2:end-1, j * scan_dpixel) = 0;
+           %    [num_components, ~, ~] = CountComponents(tmp_circle);
                
-               if (num_components > 1) 
-                  markedCircleIndices(end+1) = k;
-                  break;
-               end
+           %    if (num_components > 1) 
+           %       markedCircleIndices(end+1) = k;
+           %       break;
+           %    end
                
-               tmp_circle = circle;
-               tmp_circle(j * scan_dpixel, 2:end-1) = 0;
-               [num_components, ~, ~] = CountComponents(tmp_circle);
-               
-               if (num_components > 1) 
-                  markedCircleIndices(end+1) = k;
-                  break;
-               end
-           end          
+           %    tmp_circle = circle;
+           %    tmp_circle(j * scan_dpixel, 2:end-1) = 0;
+           %    [num_components, ~, ~] = CountComponents(tmp_circle);
+           %    
+           %    if (num_components > 1) 
+           %       markedCircleIndices(end+1) = k;
+           %       break;
+           %    end
+           %end          
         end
     end
 end
