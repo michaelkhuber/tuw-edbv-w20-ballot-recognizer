@@ -18,6 +18,9 @@ function [num_components, biggest, biggest_size] = CountComponents(binary_image)
 %   component
 %
 
+    %figure
+    %imshow(binary_image);
+
     num_components = 0;
     biggest = zeros(size(binary_image));
     biggest_size = 0;
