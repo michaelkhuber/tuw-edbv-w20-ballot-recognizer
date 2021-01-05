@@ -119,10 +119,10 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     if doZeroApprox 
         zeroApprox = locMin - 2 * (locMax - locMin) * counts(locMin) / (counts(locMax) - counts(locMin));
         zeroApprox = round( zeroApprox );
-        if( zeroApprox < 1 )
-            zeroApprox = 1;
+        if zeroApprox > length(edges)
+            zeroApprox = length(edges);
         end
-        localMinDist = edges(round(zeroApprox));
+        localMinDist = edges(zeroApprox);
     end
     
     if(showPlot || savePlot) 

@@ -40,7 +40,7 @@ function ballotTable = Main()
     ballotIndices = 1:size(ballotFilenames,1);
     
     % - Manually choose Files (meant for debugging)
-    ballotIndices = 1:141;
+    ballotIndices = 152:152;
     
     % Get expected choices for each ballot from test_data.csv table
     testData = readtable('resources/test_data.csv');

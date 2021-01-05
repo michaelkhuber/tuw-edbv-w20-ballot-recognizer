@@ -27,7 +27,7 @@ function transformed = Transform(im, resultName, step)
     global pltN;
     global pltCount;
     
-    showPlot = false; %show the plots in a figure
+    showPlot = true; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
@@ -112,6 +112,13 @@ function transformed = Transform(im, resultName, step)
         %resize ballot table to have its original template size
         newSize = [2150,3520];
         imNew = resize(imNew,newSize);
+        
+        grayImg = toGray(im2double(imNew));
+        adapted = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
+        whitePixels = adapted > 0.6;
+        if sum(whitePixels(:)) < size(whitePixels,1) * size(whitePixels,2) * 0.35
+            error("Not enough white Pixels deteced. This most likely means that the Transformation failed");
+        end
     end
 
     if(showPlot || savePlot) 
