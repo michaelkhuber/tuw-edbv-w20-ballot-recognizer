@@ -27,7 +27,7 @@ function transformed = Transform(im, resultName, step)
     global pltN;
     global pltCount;
     
-    showPlot = false; %show the plots in a figure
+    showPlot = true; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
@@ -51,28 +51,40 @@ function transformed = Transform(im, resultName, step)
 
     if(showPlot || savePlot)
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        set(f, 'Renderer', 'opengl', 'Position', [10 10 2000 1000]);
         imshow(im); title('Original');
     end
 
     % prepare the image
     if step == 1
-        preparedImage = Prepare(im, 20.0, true);
+        preparedImage = Prepare(im, step);
     elseif step == 2
-        preparedImage = Prepare(im, 5.0, false);
+        preparedImage = Prepare(im, step);
     end
 
     % mask the image
     if step == 1
-        maskedImage = MaskImage(preparedImage);
+        maskedImage = MaskPaper(preparedImage);
     elseif step == 2
-        maskedImage = MaskImage2(preparedImage);
+        maskedImage = MaskTable(preparedImage);
     end
 
     % get lines from hough transformation of the masked image
-    [lines, lines2] = HoughTransform(maskedImage);
+    if step == 1
+        [lines, lines2] = HoughTransform(maskedImage, 0.5);
+    elseif step == 2
+        [lines, lines2] = HoughTransform(maskedImage, 0.2);
+    end
 
     % find intersections between vertical and horizontal lines
+    if step == 1
     intersections = findIntersections(im, lines, lines2);
+    elseif step == 2
+        intersections = [];
+        for l = [lines lines2]
+            intersections = [intersections; l.point1; l.point2];
+        end
+    end
 
     % find the convex hull from all the intersection points
     k = convhull(intersections);
@@ -83,10 +95,10 @@ function transformed = Transform(im, resultName, step)
     quadrangle = findCorners(hull);
 
     % orders the corners as top-left, top-right, bottom-right, bottom-left
-    [corners, middlePoints, middleImagePoints] = orderCorners(im, quadrangle);
+    corners = orderCorners(quadrangle);
 
     if(showPlot || savePlot) 
-        plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints);
+        plotLinesAndCorners(im, lines, lines2, intersections, hull, corners);
     end
 
     % Transforms the image such that the ballot corners make up a
@@ -207,15 +219,12 @@ function quadrangle = findCorners(hull)
     end
 end
 
-function [corners, middlePoints, middleImagePoints] = orderCorners(im, quadrangle)
+function corners = orderCorners(quadrangle)
     % ORDERCORNERS orders the 4 corner points of a quadrangle. The intention 
     % is to order the corners in a list as top left, top right, bottom right, bottom left.
-    % In this implementation, the distance sum is computed between the ballot border 
-    % middle points (points between corners) and the image border middle points (points
-    % between image corners). The 4 corners points are orderd such that
-    % this sum is minimal.
-    % This seemed to be more stable than simply calculating the distances between ballot 
-    % corners and image corners. Works well in 99.9% of cases.
+    % In this implementation, the two left most points are computed, and
+    % the top of those points is the left-top point, the bottom of those
+    % points is the bottom-left point. Analog for the other two points.
     %
     % Author:
     %   Richard Binder
@@ -224,46 +233,34 @@ function [corners, middlePoints, middleImagePoints] = orderCorners(im, quadrangl
     %   Self
     %
     % Inputs:
-    %   im:     the image in which the simplifiedHull resides
     %   quadrangle:       a set of 4 corner points, making up a quadrangle
     %
     % Output:
     %   corners:                        the same set of points as in quadrangle, but ordered
-    %   middlePoints:                the points between corners
-    %   middleImagePoints:      the points between image corners
-
-    middleImagePoints = [
-    size(im, 2)/2, 1;
-    size(im, 2), size(im, 1)/2;
-    size(im, 2)/2, size(im, 1);
-    1, size(im, 1)/2;
-    ];     
-
-    minDist = inf;
-    corners = [];
-    tmpCorners = quadrangle;
-    middlePoints = quadrangle;
-    for i = 1:4
-        for j = 1:4
-            tmpCorners(j,:) = quadrangle(mod(i+j-1,4)+1,:);
-        end
-        dist = 0;
-        for j = 1:4
-            middlePoints(j,:) = tmpCorners(j,:) + (tmpCorners(mod(j,4)+1,:) - tmpCorners(j,:))/2;
-            dist = dist + norm(middlePoints(j,:) - middleImagePoints(j, :));
-        end
-        if(dist < minDist)
-            minDist = dist;
-            corners = tmpCorners;
-            a=0;
-        end
-    end
+    
+    corners = sortrows(quadrangle, 1);
+    
+    left = corners(1:2,:);
+    left = sortrows(left, 2);
+    topleft = left(1,:);
+    bottomleft = left(2,:);
+    
+    right = corners(3:4,:);
+    right = sortrows(right, 2);
+    topright = right(1,:);
+    bottomright = right(2,:);
+    
+    corners = [
+        topleft; 
+        topright; 
+        bottomright; 
+        bottomleft
+        ];
 end
 
-function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, middlePoints, middleImagePoints)
+function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners)
     % PLOTLINESANDCORNERS plots all lines specified in lines and lines2,
-    % and all points specified in intersections, hull, corners,
-    % middlePoints, middleImagePoints on the image im
+    % and all points specified in intersections, hull, corners on the image im
     %
     % Author:
     %   Richard Binder
@@ -278,26 +275,21 @@ function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners, mi
     subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
     hold on;
     imshow(im); title('Lines & Corners');
-    plotLines(lines);
-    plotLines(lines2);
+    plotLines(lines, 'green');
+    plotLines(lines2, 'blue');
 
     plot(intersections(:,1),intersections(:,2),'*', 'Color', 'blue');
     plot(hull(:,1),hull(:,2),'Color', 'red', 'lineWidth', 2.0);
 
     for j = 1:4
-        plot(corners(j,1),corners(j,2),'o', 'Color', 'red', 'MarkerSize', 30);
-        text(corners(j,1),corners(j,2), num2str(j),'Color', 'red','FontSize',20);
-        
-        plot(middlePoints(j,1),middlePoints(j,2),'o', 'Color', 'red', 'MarkerSize', 5);
-        text(middlePoints(j,1),middlePoints(j,2), num2str(j),'Color', 'red','FontSize',5);
-        plot(middleImagePoints(j,1),middleImagePoints(j,2),'o', 'Color', 'red', 'MarkerSize', 5);
-        text(middleImagePoints(j,1),middleImagePoints(j,2), num2str(j),'Color', 'red','FontSize',5);
+        plot(corners(j,1),corners(j,2),'o', 'Color', 'black', 'MarkerSize', 30);
+        text(corners(j,1),corners(j,2), num2str(j),'Color', 'black','FontSize',20);
     end
     hold off;
 end
 
-function plotLines(lines)
-    % PLOTLINES plots all lines specified in lines
+function plotLines(lines, color)
+    % PLOTLINES plots lines given es two endpoints in color
     %
     % Author:
     %   Richard Binder
@@ -307,7 +299,7 @@ function plotLines(lines)
     
     for k = 1:length(lines)
        xy = [lines(k).point1; lines(k).point2];
-       plot(xy(:,1), xy(:,2), 'LineWidth', 5, 'Color', 'black');
+       plot(xy(:,1), xy(:,2), 'LineWidth', 5, 'Color', color);
        plot(xy(1,1), xy(1,2), 'x', 'LineWidth', 2, 'Color', 'yellow');
        plot(xy(2,1), xy(2,2), 'x', 'LineWidth', 2, 'Color', 'magenta');
     end
@@ -342,7 +334,7 @@ function rotated = correctTableRotation(ballotTable)
     rotated = ballotTable;
     
     grayTable = toGray(im2double(ballotTable));
-    blurredTable = gaussfilt(grayTable, 5.0);
+    blurredTable = grayTable;
     % Create a gradient magnitude mask
     [gradMag, ~] = imgradient(blurredTable);
     gradThreshold = max(gradMag(:)) * 0.07;

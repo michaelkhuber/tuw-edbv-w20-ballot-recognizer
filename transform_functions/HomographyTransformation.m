@@ -42,11 +42,6 @@ function imNew = HomographyTransformation(image, corners, step)
     if (heightL < 300 || heightR < 300 || widthT < 300 || widthB < 300)
         error("Points of quadrangle too close to each other, cannot perform imwarp");
     end
-
-    % Use the maximum of the quadrangle width and height 
-    % to approxmate the quadrangle dimensions
-    quadrangleHeight = max([heightL, heightR]);
-    quadrangleWidth  = max([widthT, widthB]);
     
     % We know the dimensions of our ballot paper and ballot table, so we
     % can just use them to define the dimensions of the new rectangle
@@ -58,9 +53,13 @@ function imNew = HomographyTransformation(image, corners, step)
         ballotWidth = 3520;
     end
     
-    % If width is larger than height, then define the new image dimensions
-    % normally, otherwise the ballot is rotated
-    if quadrangleWidth > quadrangleHeight
+    % compute the skewfactor, which should give the ratio between
+    % horizontal and vertical points
+    skewFactor = ( widthT * widthB ) / ( heightL * heightR );
+    
+    %depending on the skewFactor, we decide if the horizontal or vertical
+    %lines are the longer ones.
+    if skewFactor > 1.1
         imNewWidth = ballotWidth;
         imNewHeight = ballotHeight;
     else

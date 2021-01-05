@@ -57,6 +57,10 @@ filename,validity,choices
 27D.jpg,valid,LINKS
 27E.jpg,valid,LINKS
 27F.jpg,valid,LINKS
+27G.jpg,valid,LINKS
+27H.jpg,valid,LINKS
+27I.jpg,valid,LINKS
+27J.jpg,valid,LINKS
 28A.jpg,valid,GRUENE
 28B.jpg,valid,GRUENE
 28C.jpg,valid,GRUENE
@@ -65,6 +69,8 @@ filename,validity,choices
 28F.jpg,valid,GRUENE
 28G.jpg,valid,GRUENE
 28H.jpg,valid,GRUENE
+28I.jpg,valid,GRUENE
+28J.jpg,valid,GRUENE
 29A.jpg,valid,NEOS
 29B.jpg,valid,NEOS
 29C.jpg,valid,NEOS
@@ -92,6 +98,29 @@ filename,validity,choices
 31I.jpg,valid,GRUENE
 31J.jpg,valid,GRUENE
 31K.jpg,valid,GRUENE
+32A.jpg,invalid,GRUENE HC SOEZ
+32D.jpg,invalid,GRUENE HC SOEZ
+32E.jpg,invalid,GRUENE HC SOEZ
+32F.jpg,invalid,GRUENE HC SOEZ
+32G.jpg,invalid,GRUENE HC SOEZ
+32H.jpg,invalid,GRUENE HC SOEZ
+32I.jpg,invalid,GRUENE HC SOEZ
+32J.jpg,invalid,GRUENE HC SOEZ
+32K.jpg,invalid,GRUENE HC SOEZ
+32L.jpg,invalid,GRUENE HC SOEZ
+32M.jpg,invalid,GRUENE HC SOEZ
+32N.jpg,invalid,GRUENE HC SOEZ
+32O.jpg,invalid,GRUENE HC SOEZ
+32P.jpg,invalid,GRUENE HC SOEZ
+32Q.jpg,invalid,GRUENE HC SOEZ
+32R.jpg,invalid,GRUENE HC SOEZ
+32S.jpg,invalid,GRUENE HC SOEZ
+32T.jpg,invalid,GRUENE HC SOEZ
+32U.jpg,invalid,GRUENE HC SOEZ
+32V.jpg,invalid,GRUENE HC SOEZ
+32W.jpg,invalid,GRUENE HC SOEZ
+32X.jpg,invalid,GRUENE HC SOEZ
+32Y.jpg,invalid,GRUENE HC SOEZ
 unsupported_1B.jpg,valid,SPOE
 unsupported_1C.jpg,valid,SPOE
 unsupported_2B.jpg,invalid,GRUENE BIER
@@ -109,3 +138,5 @@ unsupported_16D.jpg,invalid,SPOE VOLT
 unsupported_24B.jpg,valid,OEVP
 unsupported_25H.jpg,valid,LINKS
 unsupported_27E.jpg,valid,GRUENE
+unsupported_32B.jpg,invalid,GRUENE HC SOEZ
+unsupported_32C.jpg,invalid,GRUENE HC SOEZ

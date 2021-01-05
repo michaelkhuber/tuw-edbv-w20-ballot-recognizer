@@ -1,4 +1,4 @@
-function preparedImage = Prepare(image, blurStrength, saturationBased)
+function preparedImage = Prepare(image, step)
 % PREPARE processes an image such that a white foreground (e.g. white
 % ballot paper) stands out in relation to the rest of the image, and afterwards
 % gauss-blurs the image. 
@@ -31,7 +31,9 @@ function preparedImage = Prepare(image, blurStrength, saturationBased)
     global pltN;
     global pltCount;
     
-    if saturationBased
+    if step == 1
+        blurStrength = 20.0;
+        
         [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.01, false, "Saturation Histogram Analysis");
         if ( saturationSuccess )        
             nobg = im2double(nobg);
@@ -49,15 +51,24 @@ function preparedImage = Prepare(image, blurStrength, saturationBased)
             preparedImage = blurredImg;
             return;
         end
-    end
     
-    grayImg = toGray(im2double(image));
-    %grayImg = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
-    blurredImg = gaussfilt(grayImg, blurStrength);
+        grayImg = toGray(im2double(image));
+        grayImg = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
+        blurredImg = gaussfilt(grayImg, blurStrength);
 
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(blurredImg); title("Fallback To Denoised Brightness");
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(blurredImg); title("Fallback To Denoised Brightness");
+        end
+    elseif step == 2
+        blurStrength = 5.0;
+        grayImg = toGray(im2double(image));
+        blurredImg = gaussfilt(grayImg, blurStrength);
+
+        if(showPlot || savePlot) 
+            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+            imshow(blurredImg); title("Denoised Brightness");
+        end
     end
     
     preparedImage = blurredImg;
