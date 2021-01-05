@@ -26,7 +26,7 @@ function [eImg] = erode(img, mask)
 %             out(i,j) = min(fenster);
 %         end
 %     end
-%     dImg = out;
+%     eImg = out;
 
     eImg = ordfilt2(img, 1, mask);
 end
