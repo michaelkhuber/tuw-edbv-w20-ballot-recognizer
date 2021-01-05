@@ -1,3 +1,4 @@
+
 function [resizedImg] = resize(img, newSize)    
     [rows, columns, colorChannels] = size(img);
     if colorChannels == 1 
