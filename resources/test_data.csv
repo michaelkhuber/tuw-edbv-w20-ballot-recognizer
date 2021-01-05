@@ -22,7 +22,7 @@ filename,validity,choices
 12A.jpg,invalid,
 13A.jpg,invalid,
 13B.jpg,invalid,
-14A.jpg,valid,NEOS
+14A.jpg,invalid,NEOS BIER
 17B.jpg,valid,HC
 18A.jpg,valid,BIER
 18B.jpg,valid,BIER

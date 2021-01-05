@@ -1,3 +1,20 @@
+% SE creates an structuring element for Dilation and Erosion 
+%    
+%
+% Author:
+%   Marie-Therese Wiedhalm
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   string:                    option if strucutring element should be a 'line' or an 'octagon' 
+%   a:                         length of line or radius of octagon 
+%.  b:                         degree of line 
+%
+% Output:
+%   seOut:                     binary structuring element   
+
 function [seOut] = se(string,a,b)
     switch string
         case 'line'

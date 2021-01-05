@@ -1,3 +1,18 @@
+% GAUSSFILT performs a gaussian blur on the input image with given sigma 
+%
+% Author:
+%   Marie-Therese Wiedhalm
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   im:                        The input image 
+%   sigma:                     standard deviation   
+%
+% Output:
+%   gImg:                      Image with gaussian blur   
+
 function [gImg] = gaussfilt(img, sigma)
     delta = round(3*sigma);
     kernelWidth = 2*delta+1; 
