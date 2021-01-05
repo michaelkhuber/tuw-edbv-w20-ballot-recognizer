@@ -1,4 +1,19 @@
-function [dImg] = erode(img, mask)
+% ERODE erodes binarized image with given structuring element 
+%
+% Author:
+%   Marie-Therese Wiedhalm
+%
+% Source:
+%   Self
+%
+% Inputs:
+%   im:                        The input image 
+%   mask:                      Structuring element used as dilation mask  
+%
+% Output:
+%   eImg:                      eroded image  
+
+function [eImg] = erode(img, mask)
 %     [ai,bi]=size(img);
 %     [am,bm]=size(mask);
 %     deltaa = floor(am/2);
@@ -13,5 +28,5 @@ function [dImg] = erode(img, mask)
 %     end
 %     dImg = out;
 
-    dImg = ordfilt2(img, 1, mask);
+    eImg = ordfilt2(img, 1, mask);
 end
