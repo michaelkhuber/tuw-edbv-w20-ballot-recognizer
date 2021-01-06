@@ -8,7 +8,7 @@
 %
 % Inputs:
 %   im:                        The input image 
-%   mask:                      Structuring element used as dilation mask  
+%   mask:                      Structuring element used as erosion mask  
 %
 % Output:
 %   eImg:                      eroded image  
