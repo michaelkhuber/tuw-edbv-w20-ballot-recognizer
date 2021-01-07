@@ -14,7 +14,7 @@ function [centers_out,radii_out] = FilterCircles(centers_in,radii_in)
     global Y_THRESHOLD;
     global X_THRESHOLD;
 
-    % Y threshold, circle centers within 20px of each other are treated
+    % Y threshold, circle centers within 50px of each other are treated
     % as equal
     Y_THRESHOLD = 50;
 
