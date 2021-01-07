@@ -16,11 +16,13 @@ function [success, validity, choice, error] = Pipeline(templateChoices, testData
         %  - Transform1: Determine the ballot paper in the image, transform the image such
         %  that the ballot paper is a (near) perfect rectangle. Then crop
         %  it to only the ballot paper.
-        transformedBallot = Transform(ballotImg, ballotFilename(2), 1);
+        [transformedBallot, step] = Transform(ballotImg, ballotFilename(2), 1);
         %  - Transform2: Determine the table in the ballot paper, transform the image such
         %  that the ballot table is a (near) perfect rectangle. Then crop
         %  it to only the table.
-        transformedBallot = Transform(transformedBallot, ballotFilename(2), 2);
+        if step== 1
+            transformedBallot = Transform(transformedBallot, ballotFilename(2), 2);
+        end
         
         %% - STEP 3
         %  - Match circles in ballot

@@ -46,13 +46,8 @@ function maskedImage = MaskTable(img)
         imshow(gradMask); title('Grad Mask');
     end
 
-    % Find all the connected compoments & remove small ones
-    componentMask = ReduceComponents(gradMask);
-
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(componentMask); title('Component Reduction');
-    end  
+    % Find all the connected compoments & get biggest one
+    componentMask = ReduceComponents(gradMask, 'center');
 
     ConvexHull = bwconvhull(componentMask);
     ConvexHull(:,size(ConvexHull,2)) = 0.0;

@@ -1,4 +1,4 @@
-function [num_components, biggest, biggest_size] = CountComponents(binary_image)
+function [num_components, biggest, biggest_size, center, centerCorners] = CountComponents(binary_image)
 % CountComponents Counts the white components in the given image via 8-way
 %
 % Author: 
@@ -28,6 +28,19 @@ function [num_components, biggest, biggest_size] = CountComponents(binary_image)
     global LABEL_MAT;
     LABEL_MAT = zeros(size(binary_image));
     
+    centerLength = floor(1.0/6.0 * size(binary_image));
+    outterLength = floor((size(binary_image) - centerLength) / 2.0);
+    centerMatrix = zeros(size(binary_image));
+    centerMatrix([outterLength(1) : outterLength(1) + centerLength(1)], [outterLength(2) : outterLength(2) + centerLength(2)]) = 1.0;
+    center_size = 0;
+    
+    centerCorners = [
+        outterLength(2), outterLength(1);
+        outterLength(2), outterLength(1) + centerLength(1);
+        outterLength(2)+centerLength(2), outterLength(1) + centerLength(1);
+        outterLength(2)+centerLength(2), outterLength(1)
+        ];
+    
     for i = 2  : size(binary_image, 1) -1 
        for j = 2 : size(binary_image, 2) -1
           % check if pixel is unlabeled and white, then increase component
@@ -40,9 +53,19 @@ function [num_components, biggest, biggest_size] = CountComponents(binary_image)
                   biggest = area;
                   biggest_size = area_size;
               end
+              
+              areaXcenter = area .* centerMatrix;
+              if sum(areaXcenter(:)) > center_size
+                  center = area;
+                  center_size = sum(areaXcenter(:));
+              end
           end           
        end
-    end    
+    end
+    
+    if center_size < 100
+        center = biggest;
+    end
 end
 
 function [area, area_size] = floodFillLabel(startX, startY, binary_image, area, area_size)

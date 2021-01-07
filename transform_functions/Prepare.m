@@ -1,4 +1,4 @@
-function preparedImage = Prepare(image, step)
+function [preparedImage, step] = Prepare(image, step)
 % PREPARE processes an image such that a white foreground (e.g. white
 % ballot paper) stands out in relation to the rest of the image, and afterwards
 % gauss-blurs the image. 
@@ -52,9 +52,11 @@ function preparedImage = Prepare(image, step)
             return;
         end
     
+        blurStrength = 5.0;
         grayImg = toGray(im2double(image));
         grayImg = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
         blurredImg = gaussfilt(grayImg, blurStrength);
+        step = 2;
 
         if(showPlot || savePlot) 
             subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;

@@ -43,12 +43,7 @@ function maskedImage = MaskPaper(img)
     end
 
     % Find all the connected compoments & remove small ones
-    componentMask = ReduceComponents(gradMask);
-
-    if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(componentMask); title('Component Reduction');
-    end
+    componentMask = ReduceComponents(gradMask, 'biggest');
 
     structure = se('octagon',9);
     ErodeMask = erode(componentMask, structure);
