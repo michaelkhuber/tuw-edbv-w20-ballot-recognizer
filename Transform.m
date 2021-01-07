@@ -1,4 +1,4 @@
-function transformed = Transform(im, resultName, step)
+function [transformed, step] = Transform(im, resultName, step)
 % TRANSFORM finds a ballot paper in the given input image and
 % transforms the image such that the ballot paper becomes a (near) perfect rectangle. 
 % Then crops the image to only the ballot paper. If step == 1, then the image is
@@ -46,20 +46,20 @@ function transformed = Transform(im, resultName, step)
         f = figure(1);
         clf('reset');
     elseif(savePlot)
-        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 2000 1000]);
+        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 1700 1000]);
     end
 
     if(showPlot || savePlot)
         subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        set(f, 'Renderer', 'opengl', 'Position', [10 10 2000 1000]);
+        set(f, 'Renderer', 'opengl', 'Position', [10 10 1700 1000]);
         imshow(im); title('Original');
     end
 
     % prepare the image
     if step == 1
-        preparedImage = Prepare(im, step);
+        [preparedImage, step]  = Prepare(im, step);
     elseif step == 2
-        preparedImage = Prepare(im, step);
+        preparedImage  = Prepare(im, step);
     end
 
     % mask the image
@@ -114,7 +114,7 @@ function transformed = Transform(im, resultName, step)
         imNew = resize(imNew,newSize);
         
         grayImg = toGray(im2double(imNew));
-        adapted = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.005);
+        adapted = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.2);
         whitePixels = adapted > 0.6;
         if sum(whitePixels(:)) < size(whitePixels,1) * size(whitePixels,2) * 0.35
             error("Not enough white Pixels deteced. This most likely means that the Transformation failed");
