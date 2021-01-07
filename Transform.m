@@ -27,7 +27,7 @@ function [transformed, step] = Transform(im, resultName, step)
     global pltN;
     global pltCount;
     
-    showPlot = false; %show the plots in a figure
+    showPlot = true; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
@@ -46,12 +46,12 @@ function [transformed, step] = Transform(im, resultName, step)
         f = figure(1);
         clf('reset');
     elseif(savePlot)
-        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 2000 1000]);
+        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 1700 1000]);
     end
 
     if(showPlot || savePlot)
          pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
-        set(f, 'Renderer', 'opengl', 'Position', [10 10 2000 1000]);
+        set(f, 'Renderer', 'opengl', 'Position', [10 10 1700 1000]);
         if step == 1
             t = 'Input';
         elseif step == 2
