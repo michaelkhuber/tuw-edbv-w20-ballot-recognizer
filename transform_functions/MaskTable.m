@@ -42,8 +42,9 @@ function maskedImage = MaskTable(img)
     gradMask = (gradMag > gradThreshold);
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(gradMask); title('Grad Mask');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Grad Mask';
+        imshow(gradMask); title([num2str(pltCount), '. ', t]);
     end
 
     % Find all the connected compoments & get biggest one
@@ -56,8 +57,9 @@ function maskedImage = MaskTable(img)
     ConvexHull(1, :) = 0.0;
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(ConvexHull); title('Convex Hull');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Convex Hull';
+        imshow(ConvexHull); title([num2str(pltCount), '. ', t]);
     end
 
     [gradMag, ~] = imgradient(ConvexHull);
@@ -67,8 +69,9 @@ function maskedImage = MaskTable(img)
     ConvexHull = dilate(ConvexHull, structure);
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(ConvexHull); title('Border Convex Hull');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Border Convex Hull';
+        imshow(ConvexHull); title([num2str(pltCount), '. ', t]);
     end
 
     maskedImage = ConvexHull;

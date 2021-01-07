@@ -27,15 +27,17 @@ function componentMask = ReduceComponents(binaryMask, componentMode)
     if strcmp(componentMode, 'biggest')
         componentMask = biggest;
         if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-            imshow(componentMask); title('Biggest Component');
+            pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+            t = 'Biggest Component';
+            imshow(componentMask); title([num2str(pltCount), '. ', t]);
         end
     elseif strcmp(componentMode, 'center')
         componentMask = center;
         if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+            pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
             hold on;
-            imshow(componentMask); title('Most Centered Component');
+            t = 'Most Centered Component';
+            imshow(componentMask); title([num2str(pltCount), '. ', t]);
             plot(polyshape(centerCorners), 'EdgeColor', 'green', 'FaceColor', 'green');
             hold off;
         end

@@ -299,13 +299,14 @@ function plotHoughTransform(H, thetaInterval, rhoInterval, P, P2)
     global pltCount;
     
     %plot Vertical Hough transformation
-    subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+    pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
     imshow(imadjust(rescale(H)),'XData',thetaInterval,'YData',rhoInterval, 'InitialMagnification','fit');
      axis on, axis normal, hold on;
      xlabel('\theta'), ylabel('\rho');
     plot(thetaInterval(P(:,2)),rhoInterval(P(:,1)),'s','color','green'); %plot peaks
     plot(thetaInterval(P2(:,2)),rhoInterval(P2(:,1)),'s','color','blue'); %plot peaks
     colormap(gca,hot);
-     title('Hough Transform - Vertical and Horizontal Peaks');
+    t = 'Hough Transform - Vertical and Horizontal Peaks';
+     title([num2str(pltCount), '. ', t]);
     hold off;
 end

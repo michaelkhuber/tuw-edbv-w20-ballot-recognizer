@@ -38,8 +38,9 @@ function maskedImage = MaskPaper(img)
     gradMask = (gradMag > gradThreshold);
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(gradMask); title('Grad Mask');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Grad Mask';
+        imshow(gradMask); title([num2str(pltCount), '. ', t]);
     end
 
     % Find all the connected compoments & remove small ones
@@ -49,8 +50,9 @@ function maskedImage = MaskPaper(img)
     ErodeMask = erode(componentMask, structure);
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(ErodeMask); title('Erosion Mask');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Erosion Mask';
+        imshow(ErodeMask); title([num2str(pltCount), '. ', t]);
     end
 
     maskedImage = ErodeMask;

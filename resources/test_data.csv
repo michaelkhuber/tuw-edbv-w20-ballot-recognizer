@@ -1,17 +1,21 @@
 filename,validity,choices
 1A.jpg,valid,SPOE
+1B.jpg,valid,SPOE
 1D.jpg,valid,SPOE
 2A.jpg,invalid,GRUENE BIER
+2C.jpg,invalid,GRUENE BIER
 3A.jpg,valid,BIER
 4A.jpg,invalid,SPOE GRUENE
 4B.jpg,invalid,SPOE GRUENE
 4C.jpg,invalid,SPOE GRUENE
 5A.jpg,valid,OEVP
 5B.jpg,valid,OEVP
+5C.jpg,valid,OEVP
 6A.jpg,invalid,
 6B.jpg,invalid,
 6C.jpg,invalid,
 7A.jpg,invalid,NEOS HC
+7B.jpg,invalid,NEOS HC
 7C.jpg,invalid,NEOS HC
 8A.jpg,valid,NEOS
 8B.jpg,valid,NEOS
@@ -23,6 +27,12 @@ filename,validity,choices
 13A.jpg,invalid,
 13B.jpg,invalid,
 14A.jpg,invalid,NEOS BIER
+14B.jpg,valid,NEOS BIER
+15A.jpg,valid,GRUENE
+16A.jpg,invalid,SPOE VOLT
+16B.jpg,invalid,SPOE VOLT
+16C.jpg,invalid,SPOE VOLT
+16D.jpg,invalid,SPOE VOLT
 17B.jpg,valid,HC
 18A.jpg,valid,BIER
 18B.jpg,valid,BIER
@@ -41,6 +51,7 @@ filename,validity,choices
 22D.jpg,valid,NEOS
 22E.jpg,valid,NEOS
 22F.jpg,valid,NEOS
+24B.jpg,valid,OEVP
 25J.jpg,valid,LINKS
 25K.jpg,valid,LINKS
 25L.jpg,valid,LINKS
@@ -121,37 +132,26 @@ filename,validity,choices
 32W.jpg,invalid,GRUENE HC SOEZ
 32X.jpg,invalid,GRUENE HC SOEZ
 32Y.jpg,invalid,GRUENE HC SOEZ
+33G.jpg,invalid,
+33H.jpg,invalid,
 33I.jpg,invalid,
 33J.jpg,invalid,
 33K.jpg,invalid,
 33L.jpg,invalid,
+33M.jpg,invalid,
+33N.jpg,invalid,
 33O.jpg,invalid,
 33P.jpg,invalid,
 33Q.jpg,invalid,
 33R.jpg,invalid,
-unsupported_1B.jpg,valid,SPOE
 unsupported_1C.jpg,valid,SPOE
 unsupported_2B.jpg,invalid,GRUENE BIER
-unsupported_2C.jpg,invalid,GRUENE BIER
 unsupported_3B.jpg,valid,BIER
 unsupported_3C.jpg,valid,BIER
-unsupported_5C.jpg,valid,OEVP
-unsupported_7B.jpg,invalid,NEOS HC
-unsupported_14B.jpg,valid,NEOS BIER
-unsupported_15A.jpg,valid,GRUENE
-unsupported_16A.jpg,invalid,SPOE VOLT
-unsupported_16B.jpg,invalid,SPOE VOLT
-unsupported_16C.jpg,invalid,SPOE VOLT
-unsupported_16D.jpg,invalid,SPOE VOLT
-unsupported_24B.jpg,valid,OEVP
 unsupported_25H.jpg,valid,LINKS
 unsupported_27E.jpg,valid,GRUENE
 unsupported_32B.jpg,invalid,GRUENE HC SOEZ
 unsupported_32C.jpg,invalid,GRUENE HC SOEZ
-unsupported_33G.jpg,invalid,
-unsupported_33H.jpg,invalid,
-unsupported_33M.jpg,invalid,
-unsupported_33N.jpg,invalid,
 unsupported_33S.jpg,invalid,
 unsupported_33T.jpg,invalid,
 unsupported_33U.jpg,invalid,

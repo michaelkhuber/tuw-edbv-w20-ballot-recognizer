@@ -6,7 +6,7 @@ function ballotCircles = Circles(ballot, ballotFilename)
     global pltCount;
     
     showPlot = false;
-    savePlot = true;
+    savePlot = false;
     pltM = 1;
     pltN = 1;
     pltCount = 1;

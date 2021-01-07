@@ -34,7 +34,7 @@ function [preparedImage, step] = Prepare(image, step)
     if step == 1
         blurStrength = 20.0;
         
-        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.01, false, "Saturation Histogram Analysis");
+        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.01, false, 'Saturation Histogram Analysis');
         if ( saturationSuccess )        
             nobg = im2double(nobg);
             nobg = toGray(nobg);
@@ -43,7 +43,7 @@ function [preparedImage, step] = Prepare(image, step)
             return;
         end
 
-        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.05, true, "Extended Saturation Histogram Analysis");
+        [nobg, saturationSuccess] = removeBackground(image, 0.15, 0.05, true, 'Extended Saturation Histogram Analysis');
         if ( saturationSuccess )
             nobg = im2double(nobg);
             nobg = toGray(nobg);    
@@ -59,8 +59,9 @@ function [preparedImage, step] = Prepare(image, step)
         step = 2;
 
         if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(blurredImg); title("Fallback To Denoised Brightness");
+            pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+            t = 'Fallback To Denoised Brightness';
+            imshow(blurredImg); title([num2str(pltCount), '. ', t]);
         end
     elseif step == 2
         blurStrength = 5.0;
@@ -68,8 +69,9 @@ function [preparedImage, step] = Prepare(image, step)
         blurredImg = gaussfilt(grayImg, blurStrength);
 
         if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(blurredImg); title("Denoised Brightness");
+            pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+            t = 'Denoised Brightness';
+            imshow(blurredImg); title([num2str(pltCount), '. ', t]);
         end
     end
     
@@ -128,7 +130,7 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     end
     
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
         hold on;
         plot(edges,counts,'Color', 'red');
         plot(edges(locMax),counts(locMax),'^','Color', 'blue');
@@ -137,7 +139,8 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
             plot(edges(zeroApprox), counts(zeroApprox), 'o', 'Color', 'green');
         end
         
-        title(histogramTitle);
+        t = histogramTitle;
+        title([num2str(pltCount), '. ', t]);
         hold off;
     end
     
@@ -161,8 +164,9 @@ function [thresholdImage, success] = removeBackground(image, maxProminence, minP
     else
         success = 1;
         if(showPlot || savePlot) 
-            subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-            imshow(thresholdImage); title("Saturation Based Background Removal");
+            pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+            t = 'Saturation Based Background Removal';
+            imshow(thresholdImage); title([num2str(pltCount), '. ', t]);
         end
     end
 end

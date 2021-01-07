@@ -27,12 +27,12 @@ function [transformed, step] = Transform(im, resultName, step)
     global pltN;
     global pltCount;
     
-    showPlot = true; %show the plots in a figure
+    showPlot = false; %show the plots in a figure
     savePlot = false; %save the plots as an image in a subfolder (expensive operation)
     ballotFilename = resultName;
     pltM = 3;
     pltN = 5;
-    pltCount = 1;
+    pltCount = 0;
 
     if step ~= 1 && step ~= 2
         error("Invalid transform step");
@@ -46,13 +46,18 @@ function [transformed, step] = Transform(im, resultName, step)
         f = figure(1);
         clf('reset');
     elseif(savePlot)
-        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 1700 1000]);
+        f = figure('visible','off','Renderer', 'opengl', 'Position', [10 10 2000 1000]);
     end
 
     if(showPlot || savePlot)
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        set(f, 'Renderer', 'opengl', 'Position', [10 10 1700 1000]);
-        imshow(im); title('Original');
+         pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        set(f, 'Renderer', 'opengl', 'Position', [10 10 2000 1000]);
+        if step == 1
+            t = 'Input';
+        elseif step == 2
+            t = 'Output of previous Transformation';
+        end
+        imshow(im); title([num2str(pltCount), '. ', t]);
     end
 
     % prepare the image
@@ -114,21 +119,21 @@ function [transformed, step] = Transform(im, resultName, step)
         imNew = resize(imNew,newSize);
         
         grayImg = toGray(im2double(imNew));
-        adapted = adapthisteq(grayImg,'NumTiles',[8 8],'ClipLimit',0.2);
-        whitePixels = adapted > 0.6;
+        adapted = imadjust(grayImg);
+        whitePixels = adapted > 0.5;
         if sum(whitePixels(:)) < size(whitePixels,1) * size(whitePixels,2) * 0.35
             error("Not enough white Pixels deteced. This most likely means that the Transformation failed");
         end
     end
 
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+         pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
         if step == 1
             t = 'Cropped';
         else
             t = 'Rotated, Resized & Cropped'; 
         end
-        imshow(imNew); title(t);
+        imshow(imNew); title([num2str(pltCount), '. ', t]);
     end
 
     % Save plots as an image
@@ -279,9 +284,10 @@ function plotLinesAndCorners(im, lines, lines2, intersections, hull, corners)
     global pltN;
     global pltCount;
 
-    subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
+    pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
     hold on;
-    imshow(im); title('Lines & Corners');
+    t = 'Lines & Corners';
+    imshow(im); title([num2str(pltCount), '. ', t]);
     plotLines(lines, 'green');
     plotLines(lines2, 'blue');
 
@@ -348,8 +354,9 @@ function rotated = correctTableRotation(ballotTable)
     maskedTable = (gradMag > gradThreshold);
     
     if(showPlot || savePlot) 
-        subplot(pltM, pltN, pltCount);  pltCount = pltCount + 1;
-        imshow(maskedTable); title('Table Mask To Fix Rotation');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Table Mask To Fix Rotation';
+        imshow(maskedTable); title([num2str(pltCount), '. ', t]);
     end
     
     if size(maskedTable,1) > size(maskedTable,2) 

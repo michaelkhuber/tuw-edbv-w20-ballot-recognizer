@@ -1,4 +1,4 @@
-% BINARIZE takes an image and transforms every pixel with a value bigger than the input threshold to white (255) and every other pixel to black (0) 
+% BINARIZE takes an image and marks every pixel with a value bigger than graythresh(img) 
 %
 % Author:
 %   Marie-Therese Wiedhalm
@@ -13,10 +13,6 @@
 % Output:
 %   y:                         binarized image 
 
-function [y] = binarize(img, thr)
-    x=img;
-    x=toGray(x);
-    [a,b]=size(x);
-    y=zeros(a,b); 
-    y(x>thr) = 255;  
+function y = binarize(img)
+    y = img > graythresh(img);
 end

@@ -84,8 +84,9 @@ function imNew = HomographyTransformation(image, corners, step)
 
     if(showPlot || savePlot) 
         % Plot the results
-        subplot(pltM, pltN, pltCount); pltCount = pltCount + 1;
-        imshow(imNew); title('Transformed');
+        pltCount = pltCount + 1; subplot(pltM, pltN, pltCount);
+        t = 'Transformed';
+        imshow(imNew); title([num2str(pltCount), '. ', t]);
     end
 
     %Crop the image to to the 4 corners of the ballot

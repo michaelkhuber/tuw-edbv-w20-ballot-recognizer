@@ -11,7 +11,7 @@ function markedCircleIndices = CheckMark(ballotCircles)
     for k=1:length(ballotCircles)
         circle_input = ballotCircles{k};
                                   
-        background = imbinarize(circle_input);
+        background = binarize(circle_input);
         circle = imcomplement(background);
         circle(:, 1) = 255;
         circle(:, end) = 255;
